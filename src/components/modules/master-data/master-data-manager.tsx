@@ -79,11 +79,11 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
 
   const schema = useMemo(() => buildSchema(config.fields), [config.fields]);
   const createForm = useForm<Record<string, string>>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: defaultValues(config.fields),
   });
   const editForm = useForm<Record<string, string>>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: defaultValues(config.fields),
   });
 
@@ -255,7 +255,7 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
     const values = config.fields.reduce(
       (acc, field) => ({
         ...acc,
-        [field.name]: item[field.name] ?? "",
+        [field.name]: String(item[field.name] ?? ""),
       }),
       {} as Record<string, string>,
     );
@@ -265,11 +265,11 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
   /**
    * Render form field - either Input or Select depending on field.type
    */
-  const renderFormField = (field: MasterField, form: ReturnType<typeof useForm>, disabled: boolean = false) => {
+  const renderFormField = (field: MasterField, form: any, disabled: boolean = false) => {
     return (
       <FormField
         key={field.name}
-        control={form.control}
+        control={form.control as any}
         name={field.name}
         render={({ field: formField }) => {
           if (field.type === "dropdown") {
@@ -362,10 +362,14 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item[config.idField]}>
+              <TableRow key={String(item[config.idField])}>
                 {config.columns.map((column) => (
                   <TableCell key={column.name}>
-                    {item[column.name] ?? "-"}
+                    {item[column.name] == null
+                      ? "-"
+                      : typeof item[column.name] === "object"
+                      ? JSON.stringify(item[column.name])
+                      : String(item[column.name])}
                   </TableCell>
                 ))}
                 <TableCell className="space-x-2 text-right">

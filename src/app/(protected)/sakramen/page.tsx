@@ -49,12 +49,18 @@ export default async function SakramenPage() {
     prisma.klasis.findMany({ orderBy: { nama: "asc" } }),
   ]);
 
+  const serializeDate = (d: any) => (d instanceof Date ? d.toISOString() : String(d));
+
+  const serializedBaptis = baptis.map((b) => ({ ...b, tanggal: serializeDate(b.tanggal) }));
+  const serializedSidi = sidi.map((s) => ({ ...s, tanggal: serializeDate(s.tanggal) }));
+  const serializedPernikahan = pernikahan.map((p) => ({ ...p, tanggal: serializeDate(p.tanggal) }));
+
   return (
     <SakramenModule
       data={{
-        baptis,
-        sidi,
-        pernikahan,
+        baptis: serializedBaptis,
+        sidi: serializedSidi,
+        pernikahan: serializedPernikahan,
       }}
       masters={{
         jemaat,

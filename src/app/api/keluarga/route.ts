@@ -54,7 +54,7 @@ export const GET = withErrorHandling(async (request) => {
   const limit = Number(searchParams.get("limit") ?? 20);
   const skip = (page - 1) * limit;
 
-  const where = {
+  const where: any = {
     ...(idRayon ? { idRayon } : {}),
     ...(search
       ? {

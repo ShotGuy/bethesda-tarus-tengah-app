@@ -71,7 +71,7 @@ export default function KeluargaModule({ initialData, masters }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
   });
 
   const handleSubmit = async (values: FormValues) => {

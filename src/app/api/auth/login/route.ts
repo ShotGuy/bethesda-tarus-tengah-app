@@ -17,8 +17,8 @@ export const POST = async (request: Request) => {
     const errors = parsed.error.flatten().fieldErrors;
     return NextResponse.json(
       createResponse(false, null, "Invalid credentials", {
-        username: errors.username?.[0],
-        password: errors.password?.[0],
+        username: errors.username?.[0] ?? "",
+        password: errors.password?.[0] ?? "",
       }),
       { status: 400 },
     );

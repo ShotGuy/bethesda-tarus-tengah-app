@@ -1,10 +1,12 @@
 import { PrismaClient } from "@prisma/client";
-import { Pool } from "pg";
+// `pg` bindings are used at runtime; import via require to avoid missing types in build
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { Pool } = require("pg") as any;
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
-  pgPool: Pool | undefined;
+  pgPool: any | undefined;
 };
 
 const logLevels =
@@ -30,7 +32,7 @@ const adapter = new PrismaPg(pgPool);
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: logLevels,
+    log: logLevels as any,
     adapter,
   });
 

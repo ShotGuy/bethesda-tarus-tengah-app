@@ -99,7 +99,7 @@ export default function JemaatModule({ initialData, masters }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       jenisKelamin: "L",
     },

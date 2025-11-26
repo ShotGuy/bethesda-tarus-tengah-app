@@ -68,9 +68,14 @@ export default async function JemaatPage() {
     prisma.kelurahan.findMany({ orderBy: { nama: "asc" } }),
   ]);
 
+  const serializedJemaat = jemaat.map((j) => ({
+    ...j,
+    tanggalLahir: j.tanggalLahir instanceof Date ? j.tanggalLahir.toISOString() : String(j.tanggalLahir),
+  }));
+
   return (
     <JemaatModule
-      initialData={jemaat}
+      initialData={serializedJemaat}
       masters={{
         status,
         pendidikan,

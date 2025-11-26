@@ -22,7 +22,7 @@ export const GET = withErrorHandling(async (request) => {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search") ?? "";
 
-  const where = search
+  const where: any = search
     ? {
         OR: [
           { klasis: { contains: search, mode: "insensitive" } },

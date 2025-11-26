@@ -54,7 +54,7 @@ export const POST = withErrorHandling(async (request) => {
   }
 
   const created = await prisma.sidi.create({
-    data,
+    data: data as any,
     include: includeOptions,
   });
 

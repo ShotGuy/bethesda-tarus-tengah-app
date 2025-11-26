@@ -4,9 +4,9 @@ import { createResponse } from "@/lib/api-response";
 import { AppError, UnauthorizedError } from "@/lib/errors";
 import { readSession } from "@/lib/session.server";
 
-type Handler<TParams extends Record<string, unknown> = never> = (
+type Handler<TParams extends Record<string, unknown> = Record<string, unknown>> = (
   request: Request,
-  ctx: { params: TParams },
+  ctx: { params: TParams | Promise<TParams> },
 ) => Promise<NextResponse>;
 
 export const guardAdmin = async () => {
@@ -20,11 +20,11 @@ export const guardAdmin = async () => {
 };
 
 export const withErrorHandling =
-  <TParams extends Record<string, unknown> = never>(
+  <TParams extends Record<string, unknown> = Record<string, unknown>>(
     handler: Handler<TParams>,
     { auth = true } = {},
   ) =>
-  async (request: Request, ctx: { params: TParams }) => {
+  async (request: Request, ctx: { params: TParams | Promise<TParams> }) => {
     try {
       if (auth) {
         await guardAdmin();
@@ -39,8 +39,19 @@ export const withErrorHandling =
       console.error(`[API Error] ${errorMessage}`, errorStack);
 
       if (error instanceof AppError) {
+        // Normalize details to Record<string, string> for API response
+        let details: Record<string, string> | undefined = undefined;
+        if (error.details && typeof error.details === "object") {
+          details = Object.fromEntries(
+            Object.entries(error.details as Record<string, unknown>).map(([k, v]) => {
+              if (Array.isArray(v)) return [k, String(v[0] ?? "")];
+              return [k, String(v ?? "")];
+            }),
+          );
+        }
+
         return NextResponse.json(
-          createResponse(false, null, error.message, error.details),
+          createResponse(false, null, error.message, details),
           { status: error.status },
         );
       }

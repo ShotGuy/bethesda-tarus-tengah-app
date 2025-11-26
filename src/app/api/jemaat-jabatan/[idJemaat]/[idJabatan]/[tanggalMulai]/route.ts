@@ -44,7 +44,7 @@ export const PATCH = withErrorHandling(async (request, context) => {
   }
 
   const updated = await prisma.jemaatJabatan.update({
-    where: keys,
+    where: { idJemaat_idJabatan_tanggalMulai: keys },
     data: parsed.data,
     include: {
       jabatan: true,
@@ -60,7 +60,7 @@ export const DELETE = withErrorHandling(async (_request, context) => {
   const keys = parseParams(context.params as Record<string, string>);
 
   await prisma.jemaatJabatan.delete({
-    where: keys,
+    where: { idJemaat_idJabatan_tanggalMulai: keys },
   });
 
   return NextResponse.json(

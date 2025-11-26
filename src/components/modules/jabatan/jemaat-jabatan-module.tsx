@@ -60,7 +60,7 @@ const buildDeletePath = (assignment: Assignment) =>
 export default function JemaatJabatanModule({ initialData, masters }: Props) {
   const [items, setItems] = useState(initialData);
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     defaultValues: {
       statusAktif: true,
     },

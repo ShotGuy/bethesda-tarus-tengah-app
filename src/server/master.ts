@@ -237,7 +237,7 @@ const masterConfig: Record<MasterKey, MasterConfig> = {
   },
 };
 
-const getDelegate = <K extends PrismaModelKey>(model: K) => prisma[model];
+const getDelegate = <K extends PrismaModelKey>(model: K): any => prisma[model];
 
 const getConfig = (key: MasterKey) => {
   const config = masterConfig[key];
@@ -408,7 +408,7 @@ export const createMasterDetailHandlers = (key: MasterKey) => {
   });
 
   const DELETE = withErrorHandling(async (_request, { params: paramsPromise }) => {
-    const delegate = prisma[config.model];
+    const delegate = getDelegate(config.model);
     const params = await paramsPromise;
     const rawId = (params as any)?.id;
     const id = Array.isArray(rawId) ? rawId[0] : rawId;

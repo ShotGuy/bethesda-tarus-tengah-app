@@ -102,13 +102,13 @@ export default function SakramenModule({ data, masters, initialTab }: Props) {
   const [pernikahanList, setPernikahanList] = useState(data.pernikahan);
 
   const baptisForm = useForm<BaptisValues>({
-    resolver: zodResolver(baptisSchema),
+    resolver: zodResolver(baptisSchema) as any,
   });
   const sidiForm = useForm<BaptisValues>({
-    resolver: zodResolver(sidiSchema),
+    resolver: zodResolver(sidiSchema) as any,
   });
   const pernikahanForm = useForm<PernikahanValues>({
-    resolver: zodResolver(pernikahanSchema),
+    resolver: zodResolver(pernikahanSchema) as any,
   });
 
   const createBaptis = async (values: BaptisValues) => {

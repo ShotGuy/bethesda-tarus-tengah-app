@@ -1,0 +1,13 @@
+fix(build/api): make project buildable and improve API-delete errors
+
+- Accept async route params in API handler and normalize error details for responses
+- Catch Prisma foreign-key (P2003) failures on DELETE and return HTTP 409 with friendly message
+  "Tidak dapat menghapus data karena sudah ada referensi/relasi di data lain."
+- Serialize Date fields returned from server pages to ISO strings for client components
+- Adjust some Prisma where/where-unique shapes; cast a few dynamic inputs to `any` where necessary
+- Add minimal ambient `pg` declaration and use runtime `require('pg')` to avoid missing dev types
+- Apply scoped react-hook-form/Zod resolver type workarounds to avoid build-time type conflicts
+- Misc: ensure safe rendering/stringification in master-data manager and consistent keys
+
+Notes:
+- These changes are focused on making the repository build cleanly for deployment. Some casts to `any` were used as pragmatic short-term fixes. Recommended follow-ups: install proper types (e.g. `@types/pg`), consolidate `react-hook-form` versions, and tighten Prisma input types where possible.

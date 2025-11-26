@@ -33,14 +33,16 @@ export const GET = withErrorHandling(async (request) => {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search") ?? "";
 
-  const where = search
+  const where: any = search
     ? {
         OR: [
           {
             jemaat: {
-              nama: {
-                contains: search,
-                mode: "insensitive",
+              is: {
+                nama: {
+                  contains: search,
+                  mode: "insensitive",
+                },
               },
             },
           },
@@ -87,7 +89,7 @@ export const POST = withErrorHandling(async (request) => {
   }
 
   const created = await prisma.baptis.create({
-    data,
+    data: data as any,
     include: includeOptions,
   });
 
