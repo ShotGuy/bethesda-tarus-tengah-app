@@ -18,7 +18,8 @@ const includeOptions = {
   jemaats: true,
 };
 
-export const GET = withErrorHandling(async (_request, { params }) => {
+export const GET = withErrorHandling(async (_request, { params: paramsPromise }) => {
+  const params = await paramsPromise;
   const { id } = params as { id: string };
 
   const data = await prisma.pernikahan.findUnique({
@@ -33,7 +34,8 @@ export const GET = withErrorHandling(async (_request, { params }) => {
   return NextResponse.json(createResponse(true, data));
 });
 
-export const PATCH = withErrorHandling(async (request, { params }) => {
+export const PATCH = withErrorHandling(async (request, { params: paramsPromise }) => {
+  const params = await paramsPromise;
   const { id } = params as { id: string };
   const payload = await request.json();
   const parsed = updateSchema.safeParse(payload);
@@ -74,20 +76,25 @@ export const PATCH = withErrorHandling(async (request, { params }) => {
   );
 });
 
-export const DELETE = withErrorHandling(async (_request, { params }) => {
+export const DELETE = withErrorHandling(async (_request, { params: paramsPromise }) => {
+  const params = await paramsPromise;
   const { id } = params as { id: string };
-
-  await prisma.$transaction(async (tx) => {
-    await tx.jemaat.updateMany({
-      where: { idPernikahan: id },
-      data: { idPernikahan: null },
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.jemaat.updateMany({
+        where: { idPernikahan: id },
+        data: { idPernikahan: null },
+      });
+      await tx.pernikahan.delete({
+        where: { idPernikahan: id },
+      });
     });
-
-    await tx.pernikahan.delete({
-      where: { idPernikahan: id },
-    });
-  });
-
-  return NextResponse.json(createResponse(true, null, "Data dihapus"));
+    return NextResponse.json(createResponse(true, null, "Data dihapus"));
+  } catch (err: any) {
+    if (err?.code === 'P2003') {
+      throw new AppError("Tidak dapat menghapus data karena sudah ada referensi/relasi di data lain.", 409);
+    }
+    throw err;
+  }
 });
 

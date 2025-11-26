@@ -68,6 +68,7 @@ type FormValues = z.infer<typeof schema>;
 export default function KeluargaModule({ initialData, masters }: Props) {
   const [items, setItems] = useState(initialData);
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -88,24 +89,67 @@ export default function KeluargaModule({ initialData, masters }: Props) {
         },
       };
 
-      const res = await fetch("/api/keluarga", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      if (editingId) {
+        const res = await fetch(`/api/keluarga/${editingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-      const data = await res.json();
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message ?? "Gagal memperbarui keluarga");
+        setItems((prev) => prev.map((it) => (it.idKeluarga === editingId ? data.data : it)));
+        setEditingId(null);
+        setOpen(false);
+        form.reset();
+        toast.success("Keluarga berhasil diperbarui");
+      } else {
+        const res = await fetch("/api/keluarga", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-      if (!res.ok) {
-        throw new Error(data?.message ?? "Gagal menyimpan keluarga");
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.message ?? "Gagal menyimpan keluarga");
+        }
+
+        setItems((prev) => [data.data, ...prev]);
+        setOpen(false);
+        form.reset();
+        toast.success("Keluarga berhasil ditambahkan");
       }
-
-      setItems((prev) => [data.data, ...prev]);
-      setOpen(false);
-      form.reset();
-      toast.success("Keluarga berhasil ditambahkan");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Terjadi kesalahan");
+    }
+  };
+
+  const handleEdit = (item: Keluarga) => {
+    setEditingId(item.idKeluarga);
+    form.reset({
+      nikKepala: item.nikKepala,
+      idStatusKepemilikan: undefined,
+      idStatusTanah: undefined,
+      idRayon: undefined,
+      idKelurahan: undefined,
+      jalan: undefined,
+      RT: undefined,
+      RW: undefined,
+    });
+    setOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/keluarga/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message ?? "Gagal menghapus keluarga");
+      setItems((prev) => prev.filter((it) => it.idKeluarga !== id));
+      toast.success("Keluarga berhasil dihapus");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
     }
   };
 
@@ -306,6 +350,7 @@ export default function KeluargaModule({ initialData, masters }: Props) {
               <TableHead>NIK Kepala</TableHead>
               <TableHead>Rayon</TableHead>
               <TableHead>Status Rumah</TableHead>
+              <TableHead className="w-32 text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -315,6 +360,10 @@ export default function KeluargaModule({ initialData, masters }: Props) {
                 <TableCell>{item.nikKepala}</TableCell>
                 <TableCell>{item.rayon?.namaRayon ?? "-"}</TableCell>
                 <TableCell>{item.statusKepemilikan?.status ?? "-"}</TableCell>
+                <TableCell className="space-x-2 text-right">
+                  <Button size="sm" variant="outline" onClick={() => handleEdit(item)}>Edit</Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleDelete(item.idKeluarga)}>Hapus</Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

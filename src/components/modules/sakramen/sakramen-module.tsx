@@ -67,6 +67,7 @@ type Props = {
     jemaat: Array<{ idJemaat: string; nama: string }>;
     klasis: Array<{ idKlasis: string; nama: string }>;
   };
+  initialTab?: "baptis" | "sidi" | "pernikahan";
 };
 
 const baptisSchema = z.object({
@@ -95,7 +96,7 @@ const pernikahanSchema = z.object({
 type BaptisValues = z.infer<typeof baptisSchema>;
 type PernikahanValues = z.infer<typeof pernikahanSchema>;
 
-export default function SakramenModule({ data, masters }: Props) {
+export default function SakramenModule({ data, masters, initialTab }: Props) {
   const [baptisList, setBaptisList] = useState(data.baptis);
   const [sidiList, setSidiList] = useState(data.sidi);
   const [pernikahanList, setPernikahanList] = useState(data.pernikahan);
@@ -172,7 +173,7 @@ export default function SakramenModule({ data, masters }: Props) {
         Catatan baptis, sidi, dan pernikahan jemaat.
       </p>
 
-      <Tabs className="mt-6" defaultValue="baptis">
+      <Tabs className="mt-6" defaultValue={initialTab ?? "baptis"}>
         <TabsList>
           <TabsTrigger value="baptis">Baptis</TabsTrigger>
           <TabsTrigger value="sidi">Sidi</TabsTrigger>

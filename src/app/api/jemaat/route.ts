@@ -105,6 +105,17 @@ const resolveKeluargaId = async (payload: z.infer<typeof createSchema>) => {
         ...payload.keluargaBaru.alamat,
       },
     });
+    // Ensure nikKepala is not already registered (unique constraint)
+    const existing = await prisma.keluarga.findUnique({
+      where: { nikKepala: payload.keluargaBaru.nikKepala },
+      select: { idKeluarga: true },
+    });
+
+    if (existing) {
+      // Clean up the created alamat since keluarga creation will be aborted
+      await prisma.alamat.delete({ where: { idAlamat: alamat.idAlamat } }).catch(() => {});
+      throw new AppError("NIK kepala keluarga sudah terdaftar", 409);
+    }
 
     const keluarga = await prisma.keluarga.create({
       data: {
@@ -175,11 +186,26 @@ export const POST = withErrorHandling(async (request) => {
 
   const keluargaId = await resolveKeluargaId(data);
 
+  // Build a clean payload for Prisma - exclude helper fields like nikKepalaKeluarga/keluargaBaru
+  const jemaatCreatePayload: any = {
+    idJemaat: data.idJemaat,
+    nama: data.nama,
+    jenisKelamin: data.jenisKelamin,
+    tanggalLahir: data.tanggalLahir,
+    golDarah: data.golDarah ?? null,
+    statusDalamKel: data.statusDalamKel,
+    idPendidikan: data.idPendidikan ?? null,
+    idPekerjaan: data.idPekerjaan ?? null,
+    idPendapatan: data.idPendapatan ?? null,
+    idJaminan: data.idJaminan ?? null,
+    idPernikahan: data.idPernikahan ?? null,
+    idBaptis: data.idBaptis ?? null,
+    idSidi: data.idSidi ?? null,
+    idKeluarga: keluargaId,
+  };
+
   const created = await prisma.jemaat.create({
-    data: {
-      ...data,
-      idKeluarga: keluargaId,
-    },
+    data: jemaatCreatePayload,
     include: includeOptions,
   });
 

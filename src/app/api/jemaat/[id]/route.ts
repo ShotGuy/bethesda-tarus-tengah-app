@@ -60,7 +60,8 @@ const includeOptions = {
   },
 };
 
-export const GET = withErrorHandling(async (_request, { params }) => {
+export const GET = withErrorHandling(async (_request, { params: paramsPromise }) => {
+  const params = await paramsPromise;
   const { id } = params as { id: string };
 
   const jemaat = await prisma.jemaat.findUnique({
@@ -75,7 +76,8 @@ export const GET = withErrorHandling(async (_request, { params }) => {
   return NextResponse.json(createResponse(true, jemaat));
 });
 
-export const PATCH = withErrorHandling(async (request, { params }) => {
+export const PATCH = withErrorHandling(async (request, { params: paramsPromise }) => {
+  const params = await paramsPromise;
   const { id } = params as { id: string };
   const payload = await request.json();
   const parsed = updateSchema.safeParse(payload);
@@ -103,13 +105,20 @@ export const PATCH = withErrorHandling(async (request, { params }) => {
   );
 });
 
-export const DELETE = withErrorHandling(async (_request, { params }) => {
+export const DELETE = withErrorHandling(async (_request, { params: paramsPromise }) => {
+  const params = await paramsPromise;
   const { id } = params as { id: string };
-
-  await prisma.jemaat.delete({
-    where: { idJemaat: id },
-  });
-
-  return NextResponse.json(createResponse(true, null, "Jemaat dihapus"));
+  try {
+    await prisma.jemaat.delete({
+      where: { idJemaat: id },
+    });
+    return NextResponse.json(createResponse(true, null, "Jemaat dihapus"));
+  } catch (err: any) {
+    if (err?.code === 'P2003') {
+      // Prisma foreign key constraint failed
+      throw new AppError("Tidak dapat menghapus data karena sudah ada referensi/relasi di data lain.", 409);
+    }
+    throw err;
+  }
 });
 

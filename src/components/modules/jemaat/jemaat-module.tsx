@@ -96,6 +96,7 @@ const normalizeStatus = (value: string) => value.toLowerCase().includes("kepala"
 export default function JemaatModule({ initialData, masters }: Props) {
   const [items, setItems] = useState(initialData);
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -147,26 +148,90 @@ export default function JemaatModule({ initialData, masters }: Props) {
         keluargaBaru: headPayload,
       };
 
-      const res = await fetch("/api/jemaat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      if (editingId) {
+        // Update existing jemaat
+        const updatePayload: any = {
+          nama: values.nama,
+          jenisKelamin: values.jenisKelamin === "L",
+          tanggalLahir: values.tanggalLahir,
+          golDarah: values.golDarah ?? null,
+          statusDalamKel: values.statusDalamKel,
+          idPendidikan: values.idPendidikan ?? null,
+          idPekerjaan: values.idPekerjaan ?? null,
+          idPendapatan: values.idPendapatan ?? null,
+          idJaminan: values.idJaminan ?? null,
+        };
 
-      const data = await res.json();
+        const res = await fetch(`/api/jemaat/${editingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatePayload),
+        });
 
-      if (!res.ok) {
-        throw new Error(data?.message ?? "Gagal menambahkan jemaat");
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.message ?? "Gagal memperbarui jemaat");
+        }
+
+        setItems((prev) => prev.map((it) => (it.idJemaat === editingId ? data.data : it)));
+        setEditingId(null);
+        setOpen(false);
+        form.reset();
+        toast.success("Jemaat berhasil diperbarui");
+      } else {
+        const res = await fetch("/api/jemaat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.message ?? "Gagal menambahkan jemaat");
+        }
+
+        setItems((prev) => [data.data, ...prev]);
+        setOpen(false);
+        form.reset();
+        toast.success("Jemaat berhasil ditambahkan");
       }
-
-      setItems((prev) => [data.data, ...prev]);
-      setOpen(false);
-      form.reset();
-      toast.success("Jemaat berhasil ditambahkan");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Terjadi kesalahan",
       );
+    }
+  };
+
+  const handleEdit = (item: Jemaat) => {
+    setEditingId(item.idJemaat);
+    // populate form
+    form.reset({
+      idJemaat: item.idJemaat,
+      nama: item.nama,
+      jenisKelamin: item.jenisKelamin ? "L" : "P",
+      tanggalLahir: item.tanggalLahir.split("T")[0],
+      statusDalamKel: item.statusDalamKel,
+      golDarah: undefined,
+      idPendidikan: undefined,
+      idPekerjaan: undefined,
+      idPendapatan: undefined,
+      idJaminan: undefined,
+      nikKepalaKeluarga: item.keluarga?.nikKepala,
+    });
+    setOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/jemaat/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message ?? "Gagal menghapus jemaat");
+      setItems((prev) => prev.filter((it) => it.idJemaat !== id));
+      toast.success("Jemaat berhasil dihapus");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
     }
   };
 
@@ -591,6 +656,7 @@ export default function JemaatModule({ initialData, masters }: Props) {
               <TableHead>Nama</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Rayon</TableHead>
+              <TableHead className="w-32 text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -600,6 +666,10 @@ export default function JemaatModule({ initialData, masters }: Props) {
                 <TableCell>{item.nama}</TableCell>
                 <TableCell>{item.status?.status ?? "-"}</TableCell>
                 <TableCell>{item.keluarga?.rayon?.namaRayon ?? "-"}</TableCell>
+                <TableCell className="space-x-2 text-right">
+                  <Button size="sm" variant="outline" onClick={() => handleEdit(item)}>Edit</Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleDelete(item.idJemaat)}>Hapus</Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

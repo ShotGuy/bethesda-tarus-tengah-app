@@ -22,12 +22,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-import type { MasterDataset } from "@/constants/master-datasets";
+import type { MasterDataset, MasterField } from "@/constants/master-datasets";
 
 type MasterItem = Record<string, unknown>;
+type DropdownOption = { id: string; name: string; [key: string]: unknown };
 
 type Props = {
   config: MasterDataset;
@@ -54,10 +62,20 @@ const defaultValues = (fields: MasterDataset["fields"]) =>
     {} as Record<string, string>,
   );
 
+/**
+ * Get the ID field name for a given model based on field name
+ * e.g., "idProv" -> "idProv", "idKotaKab" -> "idKotaKab"
+ */
+const getIdFieldForDropdown = (fieldName: string): string => fieldName;
+
 export const MasterDataManager = ({ config, initialItems }: Props) => {
   const [items, setItems] = useState<MasterItem[]>(initialItems);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MasterItem | null>(null);
+
+  // Dropdown state: store options for each dropdown field
+  const [dropdownOptions, setDropdownOptions] = useState<Record<string, DropdownOption[]>>({});
+  const [loadingDropdowns, setLoadingDropdowns] = useState<Record<string, boolean>>({});
 
   const schema = useMemo(() => buildSchema(config.fields), [config.fields]);
   const createForm = useForm<Record<string, string>>({
@@ -72,6 +90,7 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
   const resetForms = () => {
     createForm.reset(defaultValues(config.fields));
     editForm.reset(defaultValues(config.fields));
+    setDropdownOptions({});
   };
 
   // Client-side fallback: if server didn't provide initial items, try fetching from API route
@@ -109,6 +128,34 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
     setItems(initialItems ?? []);
   }, [initialItems]);
 
+  /**
+   * Fetch dropdown options for a field
+   */
+  const fetchDropdownOptions = async (field: MasterField) => {
+    if (!field.fetchUrl || field.type !== "dropdown") return;
+
+    setLoadingDropdowns((prev) => ({ ...prev, [field.name]: true }));
+
+    try {
+      const res = await fetch(field.fetchUrl);
+      const data = await res.json();
+
+      if (res.ok && data?.data?.items) {
+        const options = data.data.items.map((item: any) => ({
+          id: item[field.name] || item[getIdFieldForDropdown(field.name)],
+          name: item[field.displayField || "nama"],
+        }));
+        setDropdownOptions((prev) => ({ ...prev, [field.name]: options }));
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(`Failed to fetch dropdown options for ${field.name}:`, err);
+      toast.error(`Gagal memuat pilihan untuk ${field.label}`);
+    } finally {
+      setLoadingDropdowns((prev) => ({ ...prev, [field.name]: false }));
+    }
+  };
+
   const handleCreate = async (values: Record<string, string>) => {
     try {
       const res = await fetch(config.apiPath, {
@@ -120,7 +167,7 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.message ?? "Gagal menambahkan data");
+        throw new Error(data?.message ?? `Gagal menambahkan data`);
       }
 
       setItems((prev) => [data.data, ...prev]);
@@ -128,7 +175,8 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
       setCreateOpen(false);
       toast.success(`${config.label} berhasil ditambahkan`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Terjadi kesalahan");
+      const msg = error instanceof Error ? error.message : "Terjadi kesalahan";
+      toast.error(msg);
     }
   };
 
@@ -137,8 +185,17 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
 
     const id = editingItem[config.idField];
 
+    if (!id) {
+      toast.error(`ID tidak ditemukan pada item untuk update`);
+      return;
+    }
+
+    const url = `${config.apiPath}/${id}`;
+    // eslint-disable-next-line no-console
+    console.log("PATCH request:", { url, id, idField: config.idField, values });
+
     try {
-      const res = await fetch(`${config.apiPath}/${id}`, {
+      const res = await fetch(url, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -147,7 +204,7 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.message ?? "Gagal memperbarui data");
+        throw new Error(data?.message ?? `Gagal memperbarui data`);
       }
 
       setItems((prev) =>
@@ -159,7 +216,8 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
       editForm.reset(defaultValues(config.fields));
       toast.success("Data berhasil diperbarui");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Terjadi kesalahan");
+      const msg = error instanceof Error ? error.message : "Terjadi kesalahan";
+      toast.error(msg);
     }
   };
 
@@ -167,15 +225,19 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
     const id = item[config.idField];
     if (!id) return;
 
+    const url = `${config.apiPath}/${id}`;
+    // eslint-disable-next-line no-console
+    console.log("DELETE request:", { url, id, idField: config.idField, itemKeys: Object.keys(item) });
+
     try {
-      const res = await fetch(`${config.apiPath}/${id}`, {
+      const res = await fetch(url, {
         method: "DELETE",
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data?.message ?? "Gagal menghapus data");
+        throw new Error(data?.message ?? `Gagal menghapus data`);
       }
 
       setItems((prev) =>
@@ -183,7 +245,8 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
       );
       toast.success("Data berhasil dihapus");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Terjadi kesalahan");
+      const msg = error instanceof Error ? error.message : "Terjadi kesalahan";
+      toast.error(msg);
     }
   };
 
@@ -197,6 +260,75 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
       {} as Record<string, string>,
     );
     editForm.reset(values);
+  };
+
+  /**
+   * Render form field - either Input or Select depending on field.type
+   */
+  const renderFormField = (field: MasterField, form: ReturnType<typeof useForm>, disabled: boolean = false) => {
+    return (
+      <FormField
+        key={field.name}
+        control={form.control}
+        name={field.name}
+        render={({ field: formField }) => {
+          if (field.type === "dropdown") {
+            return (
+              <FormItem>
+                <FormLabel>{field.label}</FormLabel>
+                <Select
+                  value={formField.value}
+                  onValueChange={(value) => {
+                    formField.onChange(value);
+                  }}
+                  onOpenChange={(open) => {
+                    if (open && !dropdownOptions[field.name]) {
+                      fetchDropdownOptions(field);
+                    }
+                  }}
+                  disabled={disabled}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Pilih ${field.label.toLowerCase()}`} />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {loadingDropdowns[field.name] ? (
+                        <SelectItem value="__loading" disabled>
+                          Memuat...
+                        </SelectItem>
+                      ) : (dropdownOptions[field.name] || []).length > 0 ? (
+                      (dropdownOptions[field.name] || []).map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {option.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                        <SelectItem value="__no_options" disabled>
+                          Tidak ada pilihan
+                        </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            );
+          }
+
+          // Default: text input
+          return (
+            <FormItem>
+              <FormLabel>{field.label}</FormLabel>
+              <FormControl>
+                <Input placeholder={field.placeholder} {...formField} disabled={disabled} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          );
+        }}
+      />
+    );
   };
 
   return (
@@ -268,22 +400,7 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
               className="space-y-4"
               onSubmit={editForm.handleSubmit(handleUpdate)}
             >
-              {config.fields.map((field) => (
-                <FormField
-                  key={field.name}
-                  control={editForm.control}
-                  name={field.name}
-                  render={({ field: formField }) => (
-                    <FormItem>
-                      <FormLabel>{field.label}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={field.placeholder} {...formField} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
+              {config.fields.map((field) => renderFormField(field, editForm))}
               <DialogFooter>
                 <Button type="submit">Perbarui</Button>
               </DialogFooter>
@@ -299,22 +416,7 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
           </DialogHeader>
           <Form {...createForm}>
             <form className="space-y-4" onSubmit={createForm.handleSubmit(handleCreate)}>
-              {config.fields.map((field) => (
-                <FormField
-                  key={field.name}
-                  control={createForm.control}
-                  name={field.name}
-                  render={({ field: formField }) => (
-                    <FormItem>
-                      <FormLabel>{field.label}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={field.placeholder} {...formField} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
+              {config.fields.map((field) => renderFormField(field, createForm))}
               <DialogFooter>
                 <Button type="submit">Simpan</Button>
               </DialogFooter>
@@ -325,4 +427,3 @@ export const MasterDataManager = ({ config, initialItems }: Props) => {
     </div>
   );
 };
-

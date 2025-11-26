@@ -259,6 +259,7 @@ export const createMasterCollectionHandlers = (key: MasterKey) => {
     const page = Number(searchParams.get("page") ?? 1);
     const limit = Number(searchParams.get("limit") ?? 20);
     const skip = (page - 1) * limit;
+    const isList = searchParams.get("list") === "true";
 
     const where = search
       ? {
@@ -268,6 +269,24 @@ export const createMasterCollectionHandlers = (key: MasterKey) => {
         }
       : undefined;
 
+    // If list=true, return simplified format for dropdowns (no pagination)
+    if (isList) {
+      const items = await delegate.findMany({
+        where,
+        orderBy: {
+          [config.idField]: "asc",
+        },
+        include: config.listInclude,
+      });
+
+      return NextResponse.json(
+        createResponse(true, {
+          items,
+        }),
+      );
+    }
+
+    // Otherwise, return paginated format
     const [items, total] = await Promise.all([
       delegate.findMany({
         where,
@@ -330,9 +349,15 @@ export const createMasterDetailHandlers = (key: MasterKey) => {
 
   const baseSchema = config.schema;
 
-  const GET = withErrorHandling(async (_request, { params }) => {
+  const GET = withErrorHandling(async (_request, { params: paramsPromise }) => {
     const delegate = getDelegate(config.model);
-    const { id } = params as { id: string };
+    const params = await paramsPromise;
+    const rawId = (params as any)?.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    if (!id || typeof id !== "string") {
+      throw new AppError("ID tidak valid", 400);
+    }
 
     const item = await delegate.findUnique({
       where: {
@@ -347,9 +372,16 @@ export const createMasterDetailHandlers = (key: MasterKey) => {
     return NextResponse.json(createResponse(true, item));
   });
 
-  const PATCH = withErrorHandling(async (request, { params }) => {
+  const PATCH = withErrorHandling(async (request, { params: paramsPromise }) => {
     const delegate = getDelegate(config.model);
-    const { id } = params as { id: string };
+    const params = await paramsPromise;
+    const rawId = (params as any)?.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
+    if (!id || typeof id !== "string") {
+      throw new AppError("ID tidak valid", 400);
+    }
+
     const body = await request.json();
     const parsed = baseSchema.partial().safeParse(body);
 
@@ -375,15 +407,27 @@ export const createMasterDetailHandlers = (key: MasterKey) => {
     );
   });
 
-  const DELETE = withErrorHandling(async (_request, { params }) => {
+  const DELETE = withErrorHandling(async (_request, { params: paramsPromise }) => {
     const delegate = prisma[config.model];
-    const { id } = params as { id: string };
+    const params = await paramsPromise;
+    const rawId = (params as any)?.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
 
-    await delegate.delete({
-      where: { [config.idField]: id },
-    });
+    if (!id || typeof id !== "string") {
+      throw new AppError("ID tidak valid", 400);
+    }
 
-    return NextResponse.json(createResponse(true, null, "Data dihapus"));
+    try {
+      await delegate.delete({
+        where: { [config.idField]: id },
+      });
+      return NextResponse.json(createResponse(true, null, "Data dihapus"));
+    } catch (err: any) {
+      if (err?.code === 'P2003') {
+        throw new AppError("Tidak dapat menghapus data karena sudah ada referensi/relasi di data lain.", 409);
+      }
+      throw err;
+    }
   });
 
   return { GET, PATCH, DELETE };

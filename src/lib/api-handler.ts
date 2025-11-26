@@ -32,7 +32,11 @@ export const withErrorHandling =
 
       return await handler(request, ctx);
     } catch (error) {
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : "";
+      
+      // eslint-disable-next-line no-console
+      console.error(`[API Error] ${errorMessage}`, errorStack);
 
       if (error instanceof AppError) {
         return NextResponse.json(
@@ -41,8 +45,12 @@ export const withErrorHandling =
         );
       }
 
+      // Include error details in development
+      const isDev = process.env.NODE_ENV === "development";
+      const details = isDev ? { originalError: errorMessage } : undefined;
+
       return NextResponse.json(
-        createResponse(false, null, "Internal server error"),
+        createResponse(false, null, `Internal server error: ${errorMessage}`, details),
         { status: 500 },
       );
     }

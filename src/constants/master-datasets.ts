@@ -2,6 +2,10 @@ export type MasterField = {
   name: string;
   label: string;
   placeholder?: string;
+  type?: "text" | "dropdown"; // default: "text"
+  parentField?: string; // name of the parent field (e.g., "idProv" for idKotaKab)
+  fetchUrl?: string; // API endpoint to fetch dropdown options, can include {parentId} placeholder
+  displayField?: string; // field to display in dropdown option (default: "nama")
 };
 
 export type MasterColumn = {
@@ -146,7 +150,13 @@ export const MASTER_DATASETS: MasterDataset[] = [
     apiPath: "/api/geografi/kota-kabupaten",
     idField: "idKotaKab",
     fields: [
-      { name: "idProv", label: "ID Provinsi" },
+      {
+        name: "idProv",
+        label: "Provinsi",
+        type: "dropdown",
+        fetchUrl: "/api/geografi/provinsi?list=true",
+        displayField: "nama",
+      },
       { name: "nama", label: "Nama Kota/Kabupaten" },
     ],
     columns: [
@@ -161,7 +171,13 @@ export const MASTER_DATASETS: MasterDataset[] = [
     apiPath: "/api/geografi/kecamatan",
     idField: "idKec",
     fields: [
-      { name: "idKotaKab", label: "ID Kota/Kabupaten" },
+      {
+        name: "idKotaKab",
+        label: "Kota/Kabupaten",
+        type: "dropdown",
+        fetchUrl: "/api/geografi/kota-kabupaten?list=true",
+        displayField: "nama",
+      },
       { name: "nama", label: "Nama Kecamatan" },
     ],
     columns: [
@@ -176,7 +192,13 @@ export const MASTER_DATASETS: MasterDataset[] = [
     apiPath: "/api/geografi/kelurahan",
     idField: "idKelurahan",
     fields: [
-      { name: "idKec", label: "ID Kecamatan" },
+      {
+        name: "idKec",
+        label: "Kecamatan",
+        type: "dropdown",
+        fetchUrl: "/api/geografi/kecamatan?list=true",
+        displayField: "nama",
+      },
       { name: "nama", label: "Nama Kelurahan" },
     ],
     columns: [

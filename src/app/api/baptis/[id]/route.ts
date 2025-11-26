@@ -19,7 +19,8 @@ const includeOptions = {
   klasis: true,
 };
 
-export const GET = withErrorHandling(async (_request, { params }) => {
+export const GET = withErrorHandling(async (_request, { params: paramsPromise }) => {
+  const params = await paramsPromise;
   const { id } = params as { id: string };
 
   const baptis = await prisma.baptis.findUnique({
@@ -34,7 +35,8 @@ export const GET = withErrorHandling(async (_request, { params }) => {
   return NextResponse.json(createResponse(true, baptis));
 });
 
-export const PATCH = withErrorHandling(async (request, { params }) => {
+export const PATCH = withErrorHandling(async (request, { params: paramsPromise }) => {
+  const params = await paramsPromise;
   const { id } = params as { id: string };
   const payload = await request.json();
   const parsed = updateSchema.safeParse(payload);
@@ -54,7 +56,8 @@ export const PATCH = withErrorHandling(async (request, { params }) => {
   );
 });
 
-export const DELETE = withErrorHandling(async (_request, { params }) => {
+export const DELETE = withErrorHandling(async (_request, { params: paramsPromise }) => {
+  const params = await paramsPromise;
   const { id } = params as { id: string };
 
   await prisma.baptis.delete({
