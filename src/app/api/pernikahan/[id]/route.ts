@@ -46,7 +46,7 @@ export const PATCH = withErrorHandling(async (request, { params: paramsPromise }
 
   const data = parsed.data;
 
-  const updated = await prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx: any) => {
     const pernikahan = await tx.pernikahan.update({
       where: { idPernikahan: id },
       data: {
@@ -80,7 +80,7 @@ export const DELETE = withErrorHandling(async (_request, { params: paramsPromise
   const params = await paramsPromise;
   const { id } = params as { id: string };
   try {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       await tx.jemaat.updateMany({
         where: { idPernikahan: id },
         data: { idPernikahan: null },

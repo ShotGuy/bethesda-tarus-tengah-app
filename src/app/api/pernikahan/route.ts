@@ -69,7 +69,7 @@ export const POST = withErrorHandling(async (request) => {
     );
   }
 
-  const created = await prisma.$transaction(async (tx) => {
+  const created = await prisma.$transaction(async (tx: any) => {
     const pernikahan = await tx.pernikahan.create({
       data: {
         idPernikahan: data.idPernikahan ?? generateId(10),
