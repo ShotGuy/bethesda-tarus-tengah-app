@@ -1,6 +1,8 @@
 import KeluargaModule from "@/components/modules/keluarga/keluarga-module";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 const keluargaInclude = {
   alamat: {
     include: {

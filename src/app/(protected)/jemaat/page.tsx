@@ -1,6 +1,8 @@
 import JemaatModule from "@/components/modules/jemaat/jemaat-module";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 const jemaatInclude = {
   keluarga: {
     include: {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { createResponse } from "@/lib/api-response";
@@ -80,13 +81,16 @@ const includeOptions = {
   },
 };
 
-const resolveKeluargaId = async (payload: z.infer<typeof createSchema>) => {
+const resolveKeluargaId = async (
+  payload: z.infer<typeof createSchema>,
+  tx: Prisma.TransactionClient,
+) => {
   if (payload.idKeluarga) {
     return payload.idKeluarga;
   }
 
   if (payload.nikKepalaKeluarga) {
-    const keluarga = await prisma.keluarga.findUnique({
+    const keluarga = await tx.keluarga.findUnique({
       where: { nikKepala: payload.nikKepalaKeluarga },
       select: { idKeluarga: true },
     });
@@ -99,25 +103,24 @@ const resolveKeluargaId = async (payload: z.infer<typeof createSchema>) => {
   }
 
   if (payload.keluargaBaru) {
-    const alamat = await prisma.alamat.create({
+    const alamat = await tx.alamat.create({
       data: {
         idAlamat: generateId(10),
         ...payload.keluargaBaru.alamat,
       },
     });
     // Ensure nikKepala is not already registered (unique constraint)
-    const existing = await prisma.keluarga.findUnique({
+    const existing = await tx.keluarga.findUnique({
       where: { nikKepala: payload.keluargaBaru.nikKepala },
       select: { idKeluarga: true },
     });
 
     if (existing) {
-      // Clean up the created alamat since keluarga creation will be aborted
-      await prisma.alamat.delete({ where: { idAlamat: alamat.idAlamat } }).catch(() => {});
+      // No need to manually delete alamat, transaction rollback will handle it
       throw new AppError("NIK kepala keluarga sudah terdaftar", 409);
     }
 
-    const keluarga = await prisma.keluarga.create({
+    const keluarga = await tx.keluarga.create({
       data: {
         idKeluarga: generateId(16),
         nikKepala: payload.keluargaBaru.nikKepala,
@@ -143,11 +146,11 @@ export const GET = withErrorHandling(async (request) => {
 
   const where: any = search
     ? {
-        OR: [
-          { nama: { contains: search, mode: "insensitive" } },
-          { idJemaat: { contains: search, mode: "insensitive" } },
-        ],
-      }
+      OR: [
+        { nama: { contains: search, mode: "insensitive" } },
+        { idJemaat: { contains: search, mode: "insensitive" } },
+      ],
+    }
     : undefined;
 
   const [items, total] = await Promise.all([
@@ -184,29 +187,31 @@ export const POST = withErrorHandling(async (request) => {
 
   const data = parsed.data;
 
-  const keluargaId = await resolveKeluargaId(data);
+  const created = await prisma.$transaction(async (tx) => {
+    const keluargaId = await resolveKeluargaId(data, tx);
 
-  // Build a clean payload for Prisma - exclude helper fields like nikKepalaKeluarga/keluargaBaru
-  const jemaatCreatePayload: any = {
-    idJemaat: data.idJemaat,
-    nama: data.nama,
-    jenisKelamin: data.jenisKelamin,
-    tanggalLahir: data.tanggalLahir,
-    golDarah: data.golDarah ?? null,
-    statusDalamKel: data.statusDalamKel,
-    idPendidikan: data.idPendidikan ?? null,
-    idPekerjaan: data.idPekerjaan ?? null,
-    idPendapatan: data.idPendapatan ?? null,
-    idJaminan: data.idJaminan ?? null,
-    idPernikahan: data.idPernikahan ?? null,
-    idBaptis: data.idBaptis ?? null,
-    idSidi: data.idSidi ?? null,
-    idKeluarga: keluargaId,
-  };
+    // Build a clean payload for Prisma - exclude helper fields like nikKepalaKeluarga/keluargaBaru
+    const jemaatCreatePayload: any = {
+      idJemaat: data.idJemaat,
+      nama: data.nama,
+      jenisKelamin: data.jenisKelamin,
+      tanggalLahir: data.tanggalLahir,
+      golDarah: data.golDarah ?? null,
+      statusDalamKel: data.statusDalamKel,
+      idPendidikan: data.idPendidikan ?? null,
+      idPekerjaan: data.idPekerjaan ?? null,
+      idPendapatan: data.idPendapatan ?? null,
+      idJaminan: data.idJaminan ?? null,
+      idPernikahan: data.idPernikahan ?? null,
+      idBaptis: data.idBaptis ?? null,
+      idSidi: data.idSidi ?? null,
+      idKeluarga: keluargaId,
+    };
 
-  const created = await prisma.jemaat.create({
-    data: jemaatCreatePayload,
-    include: includeOptions,
+    return tx.jemaat.create({
+      data: jemaatCreatePayload,
+      include: includeOptions,
+    });
   });
 
   return NextResponse.json(

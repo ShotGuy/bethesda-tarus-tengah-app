@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { createResponse } from "@/lib/api-response";
@@ -35,22 +36,22 @@ export const GET = withErrorHandling(async (request) => {
 
   const where: any = search
     ? {
-        OR: [
-          {
-            jemaat: {
-              is: {
-                nama: {
-                  contains: search,
-                  mode: "insensitive",
-                },
+      OR: [
+        {
+          jemaat: {
+            is: {
+              nama: {
+                contains: search,
+                mode: "insensitive",
               },
             },
           },
-          {
-            idBaptis: { contains: search, mode: "insensitive" },
-          },
-        ],
-      }
+        },
+        {
+          idBaptis: { contains: search, mode: "insensitive" },
+        },
+      ],
+    }
     : undefined;
 
   const items = await prisma.baptis.findMany({
@@ -88,9 +89,20 @@ export const POST = withErrorHandling(async (request) => {
     throw new AppError("Jemaat sudah memiliki data baptis", 409);
   }
 
-  const created = await prisma.baptis.create({
-    data: data as any,
-    include: includeOptions,
+  const created = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const baptis = await tx.baptis.create({
+      data: data as any,
+    });
+
+    await tx.jemaat.update({
+      where: { idJemaat: data.idJemaat },
+      data: { idBaptis: baptis.idBaptis },
+    });
+
+    return tx.baptis.findUnique({
+      where: { idBaptis: baptis.idBaptis },
+      include: includeOptions,
+    });
   });
 
   return NextResponse.json(

@@ -1,6 +1,8 @@
 import SakramenModule from "@/components/modules/sakramen/sakramen-module";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function SakramenPernikahanPage() {
   const [baptis, sidi, pernikahan, jemaat, klasis] = await Promise.all([
     prisma.baptis.findMany({

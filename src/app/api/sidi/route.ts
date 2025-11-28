@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { createResponse } from "@/lib/api-response";
@@ -53,9 +54,20 @@ export const POST = withErrorHandling(async (request) => {
     throw new AppError("Jemaat sudah memiliki data sidi", 409);
   }
 
-  const created = await prisma.sidi.create({
-    data: data as any,
-    include: includeOptions,
+  const created = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const sidi = await tx.sidi.create({
+      data: data as any,
+    });
+
+    await tx.jemaat.update({
+      where: { idJemaat: data.idJemaat },
+      data: { idSidi: sidi.idSidi },
+    });
+
+    return tx.sidi.findUnique({
+      where: { idSidi: sidi.idSidi },
+      include: includeOptions,
+    });
   });
 
   return NextResponse.json(
