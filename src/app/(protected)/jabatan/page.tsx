@@ -1,6 +1,8 @@
 import JemaatJabatanModule from "@/components/modules/jabatan/jemaat-jabatan-module";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function JabatanPage() {
   const [assignments, jemaat, jabatan] = await Promise.all([
     prisma.jemaatJabatan.findMany({
