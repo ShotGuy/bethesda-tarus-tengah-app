@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataFilter, FilterConfig } from "@/components/ui/data-filter";
 
 type Jemaat = {
   idJemaat: string;
@@ -63,6 +64,9 @@ type Props = {
   initialData: Jemaat[] | undefined;
   masters: MasterCollections;
   isLoading?: boolean;
+  filters: Record<string, string>;
+  onFilterChange: (key: string, value: string) => void;
+  onResetFilters: () => void;
 };
 
 const formSchema = z.object({
@@ -95,7 +99,14 @@ type FormValues = z.infer<typeof formSchema>;
 
 const normalizeStatus = (value: string) => value.toLowerCase().includes("kepala");
 
-export default function JemaatModule({ initialData, masters, isLoading }: Props) {
+export default function JemaatModule({
+  initialData,
+  masters,
+  isLoading,
+  filters,
+  onFilterChange,
+  onResetFilters
+}: Props) {
   const [items, setItems] = useState(initialData ?? []);
 
   useMemo(() => {
@@ -103,9 +114,56 @@ export default function JemaatModule({ initialData, masters, isLoading }: Props)
       setItems(initialData);
     }
   }, [initialData]);
+
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      key: "jenisKelamin",
+      label: "Jenis Kelamin",
+      options: [
+        { label: "Laki-laki", value: "L" },
+        { label: "Perempuan", value: "P" },
+      ],
+    },
+    {
+      key: "golDarah",
+      label: "Golongan Darah",
+      options: ["A", "B", "AB", "O"].map((g) => ({ label: g, value: g })),
+    },
+    {
+      key: "statusDalamKel",
+      label: "Status Keluarga",
+      options: masters.status.map((s) => ({ label: s.status, value: s.idStatusDalamKel })),
+    },
+    {
+      key: "idRayon",
+      label: "Rayon",
+      options: masters.rayon.map((r) => ({ label: r.namaRayon, value: r.idRayon })),
+    },
+    {
+      key: "idPendidikan",
+      label: "Pendidikan",
+      options: masters.pendidikan.map((p) => ({ label: p.jenjang, value: p.idPendidikan })),
+    },
+    {
+      key: "idPekerjaan",
+      label: "Pekerjaan",
+      options: masters.pekerjaan.map((p) => ({ label: p.namaPekerjaan, value: p.idPekerjaan })),
+    },
+    {
+      key: "idStatusKepemilikan",
+      label: "Status Rumah",
+      options: masters.statusKepemilikan.map((s) => ({ label: s.status, value: s.idStatusKepemilikan })),
+    },
+    {
+      key: "idStatusTanah",
+      label: "Status Tanah",
+      options: masters.statusTanah.map((s) => ({ label: s.status, value: s.idStatusTanah })),
+    },
+  ], [masters]);
 
   const filteredItems = useMemo(() => {
     if (!searchQuery) return items;
@@ -670,13 +728,22 @@ export default function JemaatModule({ initialData, masters, isLoading }: Props)
         </Dialog>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Cari berdasarkan NIK atau Nama..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
+      <div className="flex flex-col gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari berdasarkan NIK atau Nama..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        <DataFilter
+          filters={filterConfig}
+          values={filters}
+          onFilterChange={onFilterChange}
+          onReset={onResetFilters}
         />
       </div>
 
@@ -722,4 +789,3 @@ export default function JemaatModule({ initialData, masters, isLoading }: Props)
     </div>
   );
 }
-

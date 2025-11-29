@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataFilter, FilterConfig } from "@/components/ui/data-filter";
 
 type Keluarga = {
   idKeluarga: string;
@@ -53,6 +54,9 @@ type Props = {
   initialData: Keluarga[] | undefined;
   masters: Masters;
   isLoading?: boolean;
+  filters: Record<string, string>;
+  onFilterChange: (key: string, value: string) => void;
+  onResetFilters: () => void;
 };
 
 const schema = z.object({
@@ -68,9 +72,14 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-import { useMemo } from "react";
-
-export default function KeluargaModule({ initialData, masters, isLoading }: Props) {
+export default function KeluargaModule({
+  initialData,
+  masters,
+  isLoading,
+  filters,
+  onFilterChange,
+  onResetFilters
+}: Props) {
   const [items, setItems] = useState(initialData ?? []);
 
   useMemo(() => {
@@ -78,9 +87,33 @@ export default function KeluargaModule({ initialData, masters, isLoading }: Prop
       setItems(initialData);
     }
   }, [initialData]);
+
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      key: "idRayon",
+      label: "Rayon",
+      options: masters.rayon.map((r) => ({ label: r.namaRayon, value: r.idRayon })),
+    },
+    {
+      key: "idStatusKepemilikan",
+      label: "Status Rumah",
+      options: masters.statusKepemilikan.map((s) => ({ label: s.status, value: s.idStatusKepemilikan })),
+    },
+    {
+      key: "idStatusTanah",
+      label: "Status Tanah",
+      options: masters.statusTanah.map((s) => ({ label: s.status, value: s.idStatusTanah })),
+    },
+    {
+      key: "idKelurahan",
+      label: "Kelurahan",
+      options: masters.kelurahan.map((k) => ({ label: k.nama, value: k.idKelurahan })),
+    },
+  ], [masters]);
 
   const filteredItems = useMemo(() => {
     if (!searchQuery) return items;
@@ -372,13 +405,22 @@ export default function KeluargaModule({ initialData, masters, isLoading }: Prop
         </Dialog>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Cari berdasarkan No KK atau Nama Kepala Keluarga..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
+      <div className="flex flex-col gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari berdasarkan No KK atau Nama Kepala Keluarga..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        <DataFilter
+          filters={filterConfig}
+          values={filters}
+          onFilterChange={onFilterChange}
+          onReset={onResetFilters}
         />
       </div>
 

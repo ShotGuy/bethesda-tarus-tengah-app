@@ -1,6 +1,5 @@
-import JemaatJabatanModule from "@/components/modules/jabatan/jemaat-jabatan-module";
+import JabatanClientPage from "./client-page";
 import { prisma } from "@/lib/prisma";
-
 import { getJabatan } from "@/lib/cached-data";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +23,7 @@ export default async function JabatanPage() {
     getJabatan(),
   ]);
 
-  const serializedAssignments = assignments.map((a: any) => ({
+  const serializedAssignments = assignments.map((a) => ({
     ...a,
     tanggalMulai: a.tanggalMulai instanceof Date ? a.tanggalMulai.toISOString() : String(a.tanggalMulai),
     tanggalBerakhir: a.tanggalBerakhir
@@ -35,7 +34,7 @@ export default async function JabatanPage() {
   }));
 
   return (
-    <JemaatJabatanModule
+    <JabatanClientPage
       initialData={serializedAssignments}
       masters={{
         jemaat,
@@ -44,4 +43,3 @@ export default async function JabatanPage() {
     />
   );
 }
-

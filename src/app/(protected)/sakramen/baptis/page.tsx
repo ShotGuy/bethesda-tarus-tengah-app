@@ -1,4 +1,4 @@
-import SakramenModule from "@/components/modules/sakramen/sakramen-module";
+import SakramenClientPage from "../client-page";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -47,8 +47,8 @@ export default async function SakramenBaptisPage() {
   }));
 
   return (
-    <SakramenModule
-      data={{ baptis: serializedBaptis, sidi: serializedSidi, pernikahan: serializedPernikahan }}
+    <SakramenClientPage
+      initialData={{ baptis: serializedBaptis, sidi: serializedSidi, pernikahan: serializedPernikahan }}
       masters={{ jemaat, klasis }}
       initialTab="baptis"
     />

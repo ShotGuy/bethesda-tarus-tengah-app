@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -44,6 +44,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DataFilter, FilterConfig } from "@/components/ui/data-filter";
 
 type Assignment = {
   idJemaat: string;
@@ -61,6 +62,10 @@ type Props = {
     jemaat: Array<{ idJemaat: string; nama: string }>;
     jabatan: Array<{ idJabatan: string; namaJabatan: string }>;
   };
+  isLoading?: boolean;
+  filters: Record<string, string>;
+  onFilterChange: (key: string, value: string) => void;
+  onResetFilters: () => void;
 };
 
 const schema = z.object({
@@ -77,13 +82,43 @@ type FormValues = z.infer<typeof schema>;
 const buildDeletePath = (assignment: Assignment) =>
   `/api/jemaat-jabatan/${assignment.idJemaat}/${assignment.idJabatan}/${assignment.tanggalMulai}`;
 
-export default function JemaatJabatanModule({ initialData, masters }: Props) {
+export default function JemaatJabatanModule({
+  initialData,
+  masters,
+  isLoading,
+  filters,
+  onFilterChange,
+  onResetFilters
+}: Props) {
   const [items, setItems] = useState(initialData);
+
+  useEffect(() => {
+    if (initialData) {
+      setItems(initialData);
+    }
+  }, [initialData]);
+
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [editingItem, setEditingItem] = useState<Assignment | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Assignment | null>(null);
+
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      key: "idJabatan",
+      label: "Jabatan",
+      options: masters.jabatan.map((j) => ({ label: j.namaJabatan, value: j.idJabatan })),
+    },
+    {
+      key: "statusAktif",
+      label: "Status Aktif",
+      options: [
+        { label: "Aktif", value: "true" },
+        { label: "Tidak Aktif", value: "false" },
+      ],
+    },
+  ], [masters]);
 
   const filteredItems = items.filter((item) => {
     const searchLower = searchQuery.toLowerCase();
@@ -332,13 +367,22 @@ export default function JemaatJabatanModule({ initialData, masters }: Props) {
         </Dialog>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Cari jemaat atau jabatan..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
+      <div className="flex flex-col gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari jemaat atau jabatan..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        <DataFilter
+          filters={filterConfig}
+          values={filters}
+          onFilterChange={onFilterChange}
+          onReset={onResetFilters}
         />
       </div>
 

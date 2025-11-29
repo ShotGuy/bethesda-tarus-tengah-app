@@ -1,6 +1,5 @@
-import SakramenModule from "@/components/modules/sakramen/sakramen-module";
+import SakramenClientPage from "./client-page";
 import { prisma } from "@/lib/prisma";
-
 import { getKlasis } from "@/lib/cached-data";
 
 export const dynamic = "force-dynamic";
@@ -44,34 +43,19 @@ export default async function SakramenPage() {
     }),
     prisma.jemaat.findMany({
       orderBy: { nama: "asc" },
-    }).then((items) => {
-      return items.map((item) => ({
-        idJemaat: item.idJemaat,
-        nama: item.nama,
-        jenisKelamin: item.jenisKelamin,
-      }));
+      select: {
+        idJemaat: true,
+        nama: true,
+        jenisKelamin: true,
+      },
     }),
     getKlasis(),
   ]);
 
-  const serializeDate = (d: any) => (d instanceof Date ? d.toISOString() : String(d));
-
-  const serializedBaptis = baptis.map((b: any) => ({ ...b, tanggal: serializeDate(b.tanggal) }));
-  const serializedSidi = sidi.map((s: any) => ({ ...s, tanggal: serializeDate(s.tanggal) }));
-  const serializedPernikahan = pernikahan.map((p: any) => ({ ...p, tanggal: serializeDate(p.tanggal) }));
-
   return (
-    <SakramenModule
-      data={{
-        baptis: serializedBaptis,
-        sidi: serializedSidi,
-        pernikahan: serializedPernikahan,
-      }}
-      masters={{
-        jemaat,
-        klasis,
-      }}
+    <SakramenClientPage
+      initialData={{ baptis, sidi, pernikahan }}
+      masters={{ jemaat, klasis }}
     />
   );
 }
-

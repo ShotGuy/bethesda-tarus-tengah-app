@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import {
   Tabs,
   TabsContent,
+  TabsList,
+  TabsTrigger,
 } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -66,6 +68,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { DataFilter, FilterConfig } from "@/components/ui/data-filter";
 
 type BaptisRecord = {
   idBaptis: string;
@@ -101,6 +104,10 @@ type Props = {
     klasis: Array<{ idKlasis: string; nama: string }>;
   };
   initialTab?: "baptis" | "sidi" | "pernikahan";
+  isLoading?: boolean;
+  filters: Record<string, string>;
+  onFilterChange: (key: string, value: string) => void;
+  onResetFilters: () => void;
 };
 
 const baptisSchema = z.object({
@@ -120,11 +127,25 @@ const pernikahanSchema = z.object({
 type BaptisValues = z.infer<typeof baptisSchema>;
 type PernikahanValues = z.infer<typeof pernikahanSchema>;
 
-export default function SakramenModule({ data, masters, initialTab }: Props) {
+export default function SakramenModule({
+  data,
+  masters,
+  initialTab,
+  isLoading,
+  filters,
+  onFilterChange,
+  onResetFilters
+}: Props) {
   const [baptisList, setBaptisList] = useState(data.baptis);
   const [sidiList, setSidiList] = useState(data.sidi);
   const [pernikahanList, setPernikahanList] = useState(data.pernikahan);
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    setBaptisList(data.baptis);
+    setSidiList(data.sidi);
+    setPernikahanList(data.pernikahan);
+  }, [data]);
 
   const [openBaptis, setOpenBaptis] = useState(false);
   const [openSidi, setOpenSidi] = useState(false);
@@ -139,6 +160,22 @@ export default function SakramenModule({ data, masters, initialTab }: Props) {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: "baptis" | "sidi" | "pernikahan" } | null>(null);
+
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      key: "idKlasis",
+      label: "Klasis",
+      options: masters.klasis.map((k) => ({ label: k.nama, value: k.idKlasis })),
+    },
+    {
+      key: "jenisKelamin",
+      label: "Jenis Kelamin",
+      options: [
+        { label: "Laki-laki", value: "L" },
+        { label: "Perempuan", value: "P" },
+      ],
+    },
+  ], [masters]);
 
 
 
@@ -387,6 +424,25 @@ export default function SakramenModule({ data, masters, initialTab }: Props) {
         Catatan baptis, sidi, dan pernikahan jemaat.
       </p>
 
+      <div className="mt-6 flex flex-col gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+
+        <DataFilter
+          filters={filterConfig}
+          values={filters}
+          onFilterChange={onFilterChange}
+          onReset={onResetFilters}
+        />
+      </div>
+
       <Tabs className="mt-6" defaultValue={initialTab ?? "baptis"}>
 
         <TabsContent value="baptis" className="space-y-4">
@@ -479,13 +535,7 @@ export default function SakramenModule({ data, masters, initialTab }: Props) {
               <CardTitle>Riwayat Baptis</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="mb-4">
-                <Input
-                  placeholder="Cari nama jemaat..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+
               {filteredBaptis.map((item) => (
                 <div key={item.idBaptis} className="flex items-center justify-between rounded-lg border p-3">
                   <div>
@@ -598,13 +648,7 @@ export default function SakramenModule({ data, masters, initialTab }: Props) {
               <CardTitle>Riwayat Sidi</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="mb-4">
-                <Input
-                  placeholder="Cari nama jemaat..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+
               {filteredSidi.map((item) => (
                 <div key={item.idSidi} className="flex items-center justify-between rounded-lg border p-3">
                   <div>
@@ -830,15 +874,7 @@ export default function SakramenModule({ data, masters, initialTab }: Props) {
               <CardTitle>Riwayat Pernikahan</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="relative mb-4">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Cari nama pasangan..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+
               {filteredPernikahan.map((item) => (
                 <div key={item.idPernikahan} className="flex items-center justify-between rounded-lg border p-3">
                   <div>
