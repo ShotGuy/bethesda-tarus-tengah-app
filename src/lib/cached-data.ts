@@ -72,15 +72,104 @@ export const getJabatan = unstable_cache(
 
 export const getDashboardStats = unstable_cache(
     async () => {
-        // Execute in a transaction to use a single connection
-        const [jemaat, keluarga, baptis, pernikahan] = await prisma.$transaction([
+        const [totalJemaat, totalKeluarga, totalBaptis, totalPernikahan, allJemaat] = await prisma.$transaction([
             prisma.jemaat.count(),
             prisma.keluarga.count(),
             prisma.baptis.count(),
             prisma.pernikahan.count(),
+            prisma.jemaat.findMany({
+                select: {
+                    idJemaat: true,
+                    nama: true,
+                    jenisKelamin: true,
+                    tanggalLahir: true,
+                    keluarga: {
+                        select: {
+                            rayon: {
+                                select: { namaRayon: true }
+                            }
+                        }
+                    }
+                }
+            })
         ]);
 
-        return { jemaat, keluarga, baptis, pernikahan };
+        // Process Gender Stats
+        const genderStats = {
+            lakiLaki: 0,
+            perempuan: 0
+        };
+
+        // Process Age Stats
+        const ageStats = {
+            "0-12": 0,
+            "13-17": 0,
+            "18-35": 0,
+            "36-60": 0,
+            ">60": 0
+        };
+
+        // Process Rayon Stats
+        const rayonStats: Record<string, number> = {};
+
+        // Process Birthdays (Next 7 Days)
+        const today = new Date();
+        const nextWeek = new Date(today);
+        nextWeek.setDate(today.getDate() + 7);
+
+        const upcomingBirthdays: Array<{ id: string; nama: string; tanggal: Date; usia: number }> = [];
+
+        allJemaat.forEach(j => {
+            // Gender
+            if (j.jenisKelamin) genderStats.lakiLaki++;
+            else genderStats.perempuan++;
+
+            // Rayon
+            const rayonName = j.keluarga?.rayon?.namaRayon ?? "Tanpa Rayon";
+            rayonStats[rayonName] = (rayonStats[rayonName] || 0) + 1;
+
+            // Age
+            const birthDate = new Date(j.tanggalLahir);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            if (age <= 12) ageStats["0-12"]++;
+            else if (age <= 17) ageStats["13-17"]++;
+            else if (age <= 35) ageStats["18-35"]++;
+            else if (age <= 60) ageStats["36-60"]++;
+            else ageStats[">60"]++;
+
+            // Birthday Check
+            // Create a date object for this year's birthday
+            const thisYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+            const nextYearBirthday = new Date(today.getFullYear() + 1, birthDate.getMonth(), birthDate.getDate());
+
+            if (thisYearBirthday >= today && thisYearBirthday <= nextWeek) {
+                upcomingBirthdays.push({ id: j.idJemaat, nama: j.nama, tanggal: thisYearBirthday, usia: age + 1 });
+            } else if (nextYearBirthday >= today && nextYearBirthday <= nextWeek) {
+                upcomingBirthdays.push({ id: j.idJemaat, nama: j.nama, tanggal: nextYearBirthday, usia: age + 1 });
+            }
+        });
+
+        // Sort birthdays by date
+        upcomingBirthdays.sort((a, b) => a.tanggal.getTime() - b.tanggal.getTime());
+
+        return {
+            counts: { jemaat: totalJemaat, keluarga: totalKeluarga, baptis: totalBaptis, pernikahan: totalPernikahan },
+            genderStats: [
+                { name: "Laki-laki", value: genderStats.lakiLaki, fill: "#3b82f6" }, // Blue
+                { name: "Perempuan", value: genderStats.perempuan, fill: "#ec4899" }  // Pink
+            ],
+            ageStats: Object.entries(ageStats).map(([name, value]) => ({ name, value })),
+            rayonStats: Object.entries(rayonStats)
+                .map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value) // Sort by count descending
+                .slice(0, 10), // Top 10 Rayons
+            upcomingBirthdays
+        };
     },
     ["dashboard-stats"],
     { revalidate: 60, tags: ["dashboard"] }
