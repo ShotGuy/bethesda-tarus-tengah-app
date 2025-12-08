@@ -162,6 +162,7 @@ model Keluarga {
   idStatusKepemilikan String   @db.Char(10)
   idRayon             String   @db.Char(10)
   idStatusTanah       String   @db.Char(10)
+  fotoKartuKeluarga   String?  @db.VarChar(255)
 
   alamat            Alamat                 @relation(fields: [idAlamat], references: [idAlamat])
   statusKepemilikan StatusKepemilikanRumah @relation(fields: [idStatusKepemilikan], references: [idStatusKepemilikan])

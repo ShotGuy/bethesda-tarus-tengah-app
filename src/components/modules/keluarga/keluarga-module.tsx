@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Search, Eye, Pencil, Trash2, MoreHorizontal } from "lucide-react";
+import { Search, Eye, Pencil, Trash2, MoreHorizontal, FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -58,6 +58,7 @@ type Keluarga = {
   idRayon: string;
   idStatusKepemilikan: string;
   idStatusTanah: string;
+  fotoKartuKeluarga?: string | null;
   alamat: {
     idKelurahan: string;
     jalan: string;
@@ -96,7 +97,7 @@ const schema = z.object({
   RW: z.coerce.number().int().min(0),
 });
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<typeof schema> & { fotoKartuKeluarga?: FileList };
 
 export default function KeluargaModule({
   initialData,
@@ -144,6 +145,9 @@ export default function KeluargaModule({
     },
   ], [masters]);
 
+  // Handle file preview removal later if needed
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   const filteredItems = useMemo(() => {
     if (!searchQuery) return items;
     const lowerQuery = searchQuery.toLowerCase();
@@ -181,11 +185,23 @@ export default function KeluargaModule({
         },
       };
 
+      // Use FormData if file is present or always to support backend change
+      const formData = new FormData();
+      formData.append("data", JSON.stringify(payload));
+
+      // Check for file in values (FileList)
+      if (values.fotoKartuKeluarga && values.fotoKartuKeluarga.length > 0) {
+        formData.append("fotoKartuKeluarga", values.fotoKartuKeluarga[0]);
+      } else if (selectedFile) {
+        // Fallback if state used
+        formData.append("fotoKartuKeluarga", selectedFile);
+      }
+
+
       if (editingId) {
         const res = await fetch(`/api/keluarga/${encodeURIComponent(editingId)}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: formData, // Send FormData instead of JSON
         });
 
         const data = await res.json();
@@ -198,8 +214,7 @@ export default function KeluargaModule({
       } else {
         const res = await fetch("/api/keluarga", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: formData, // Send FormData instead of JSON
         });
 
         const data = await res.json();
@@ -213,6 +228,7 @@ export default function KeluargaModule({
         form.reset();
         toast.success("Keluarga berhasil ditambahkan");
       }
+      setSelectedFile(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Terjadi kesalahan");
     }
@@ -230,6 +246,7 @@ export default function KeluargaModule({
       RT: item.alamat.RT,
       RW: item.alamat.RW,
     });
+    setSelectedFile(null); // Reset file selection
     setOpen(true);
   };
 
@@ -436,6 +453,24 @@ export default function KeluargaModule({
                     )}
                   />
                 </div>
+
+                {/* File Upload Field */}
+                <div className="space-y-2">
+                  <FormLabel>Foto Kartu Keluarga (PDF/JPG/PNG)</FormLabel>
+                  <Input
+                    type="file"
+                    accept="image/jpeg,image/png,application/pdf"
+                    onChange={(e) => {
+                      const files = e.target.files;
+                      if (files && files.length > 0) {
+                        setSelectedFile(files[0]);
+                        form.setValue("fotoKartuKeluarga", files);
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">Maksimal 5MB.</p>
+                </div>
+
                 <DialogFooter>
                   <Button type="submit">Simpan</Button>
                 </DialogFooter>
@@ -501,6 +536,17 @@ export default function KeluargaModule({
                       </div>
                     </TableCell>
                     <TableCell className="space-x-1 text-right whitespace-nowrap">
+                      {item.fotoKartuKeluarga && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-blue-600 hover:text-blue-700"
+                          onClick={() => window.open(item.fotoKartuKeluarga!, "_blank")}
+                          title="Lihat KK"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         size="icon"
                         variant="ghost"
@@ -577,6 +623,15 @@ export default function KeluargaModule({
                     <span className="font-medium text-sm">{item.jemaat?.length ?? 0} jiwa</span>
                   </div>
                 </div>
+
+                {item.fotoKartuKeluarga && (
+                  <div className="mt-2 text-sm">
+                    <a href={item.fotoKartuKeluarga} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                      <FileText className="h-3 w-3" />
+                      Lihat Kartu Keluarga
+                    </a>
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2 mt-3">
                   <Button variant="outline" size="icon" onClick={() => handleDetail(item)}>

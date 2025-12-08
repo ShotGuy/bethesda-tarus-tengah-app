@@ -92,7 +92,48 @@ export const GET = withErrorHandling(async (request) => {
 });
 
 export const POST = withErrorHandling(async (request) => {
-  const payload = await request.json();
+  const formData = await request.formData();
+
+  // Extract file
+  const file = formData.get("fotoKartuKeluarga") as File | null;
+  let fotoUrl = null;
+
+  if (file && file.size > 0) {
+    // Basic validation
+    const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
+    if (!allowedTypes.includes(file.type)) {
+      throw new AppError("Tipe file harus JPG, PNG, atau PDF", 400);
+    }
+    if (file.size > 5 * 1024 * 1024) { // 5MB
+      throw new AppError("Ukuran file maksimal 5MB", 400);
+    }
+
+    // Upload using helper (need to import)
+    const { uploadFile } = await import("@/lib/supabase");
+    fotoUrl = await uploadFile(file, "kartu-keluarga", "kk/");
+  }
+
+  // Parse other fields manually from FormData
+  // FormData values are strings, need to check if they exist
+  const rawData: any = {};
+  formData.forEach((value, key) => {
+    if (key !== "fotoKartuKeluarga") {
+      rawData[key] = value;
+    }
+  });
+
+  // Re-construct nested object for alamat if sent as flat fields or JSON
+  // For simplicity, we assume frontend sends flattened fields or we parse a specific JSON string field if complex.
+  // BUT, previously it accepted a JSON payload. To support FormData, we should parse the 'data' field if sent as JSON string,
+  // OR manually map fields. Let's assume frontend will append 'data' as a JSON string for complex structure, OR send individual fields.
+  // A cleaner way for complex forms with text + file is: append("data", JSON.stringify(formValues)) and append("file", file).
+
+  const dataJson = formData.get("data");
+  if (!dataJson || typeof dataJson !== "string") {
+    throw new AppError("Missing or invalid 'data' field", 400);
+  }
+  const payload = JSON.parse(dataJson);
+
   const parsed = createSchema.safeParse(payload);
 
   if (!parsed.success) {
@@ -113,7 +154,6 @@ export const POST = withErrorHandling(async (request) => {
     throw new AppError("NIK kepala keluarga sudah terdaftar", 409);
   }
 
-  // ID Generation Logic
   const newIdKeluarga = await generateKeluargaId(prisma, data.idRayon);
 
   // Check collision (just in case)
@@ -145,6 +185,7 @@ export const POST = withErrorHandling(async (request) => {
       idStatusKepemilikan: data.idStatusKepemilikan,
       idRayon: data.idRayon,
       idStatusTanah: data.idStatusTanah,
+      fotoKartuKeluarga: fotoUrl,
     },
     include: includeOptions,
   });

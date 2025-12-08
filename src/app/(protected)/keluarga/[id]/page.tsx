@@ -127,7 +127,24 @@ export default async function DetailKeluargaPage({ params }: DetailKeluargaPageP
                                 <span className="text-2xl font-bold">{keluarga.jemaat.length}</span>
                                 <span className="text-xs text-muted-foreground">Total Jiwa</span>
                             </div>
-                            {/* Add more stats if needed */}
+                            <div className="flex flex-col items-center justify-center rounded-lg border p-4 bg-muted/50">
+                                <span className="text-sm font-medium mb-2">Dokumen Pendukung</span>
+                                {(keluarga as any).fotoKartuKeluarga ? (
+                                    <div className="flex flex-col items-center">
+                                        <a
+                                            href={(keluarga as any).fotoKartuKeluarga}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline text-sm font-semibold flex items-center gap-1"
+                                        >
+                                            🔍 Lihat Kartu Keluarga
+                                        </a>
+                                        <span className="text-[10px] text-green-600 font-medium mt-1">✔ Lampiran Lengkap</span>
+                                    </div>
+                                ) : (
+                                    <span className="text-xs text-destructive font-medium">❌ Belum upload KK</span>
+                                )}
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

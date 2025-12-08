@@ -66,7 +66,42 @@ export const GET = withErrorHandling(async (_request, { params: paramsPromise })
 export const PATCH = withErrorHandling(async (request, { params: paramsPromise }) => {
   const params = await paramsPromise;
   const { id } = params as { id: string };
-  const payload = await request.json();
+
+  const formData = await request.formData();
+
+  // Handle file upload if present
+  const file = formData.get("fotoKartuKeluarga") as File | null;
+  let newFotoUrl = undefined;
+
+  if (file && file.size > 0) {
+    const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
+    if (!allowedTypes.includes(file.type)) {
+      throw new AppError("Tipe file harus JPG, PNG, atau PDF", 400);
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new AppError("Ukuran file maksimal 5MB", 400);
+    }
+    const { uploadFile } = await import("@/lib/supabase");
+    newFotoUrl = await uploadFile(file, "kartu-keluarga", "kk/");
+  }
+
+  // Parse JSON data
+  const dataJson = formData.get("data");
+  let payload = {};
+  if (dataJson && typeof dataJson === "string") {
+    payload = JSON.parse(dataJson);
+  } else {
+    // If no data field, maybe just updating photo? Or loose fields?
+    // For consistency with POST, let's look for individual fields too if 'data' missing
+    // But usually PATCH sends partial updates.
+    // If data is missing and file is missing, it's an error?
+    // Let's assume payload is required if not just uploading photo
+    if (!file) {
+      throw new AppError("Tidak ada data yang dikirim", 400);
+    }
+    // If only file, payload is empty object which is fine for partial validation
+  }
+
   const parsed = updateSchema.safeParse(payload);
 
   if (!parsed.success) {
@@ -112,6 +147,7 @@ export const PATCH = withErrorHandling(async (request, { params: paramsPromise }
       }),
       ...(data.idRayon && { idRayon: data.idRayon }),
       ...(data.idStatusTanah && { idStatusTanah: data.idStatusTanah }),
+      ...(newFotoUrl && { fotoKartuKeluarga: newFotoUrl }),
     },
     include: includeOptions,
   });
