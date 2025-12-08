@@ -259,7 +259,7 @@ export const MasterDataManager = ({ config, initialItems, isLoading }: Props) =>
           if (field.type === "dropdown") {
             return (
               <FormItem>
-                <FormLabel>{field.label}</FormLabel>
+                <FormLabel>{field.label} <span className="text-red-500">*</span></FormLabel>
                 <Select
                   value={formField.value}
                   onValueChange={(value) => {
@@ -303,9 +303,9 @@ export const MasterDataManager = ({ config, initialItems, isLoading }: Props) =>
           // Default: text input
           return (
             <FormItem>
-              <FormLabel>{field.label}</FormLabel>
+              <FormLabel>{field.label} <span className="text-red-500">*</span></FormLabel>
               <FormControl>
-                <Input placeholder={field.placeholder} {...formField} disabled={disabled} />
+                <Input placeholder={field.placeholder} {...formField} value={formField.value ?? ""} disabled={disabled} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -313,6 +313,7 @@ export const MasterDataManager = ({ config, initialItems, isLoading }: Props) =>
         }}
       />
     );
+
   };
 
   return (

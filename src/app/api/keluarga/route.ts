@@ -6,6 +6,7 @@ import { withErrorHandling } from "@/lib/api-handler";
 import { AppError } from "@/lib/errors";
 import { generateId } from "@/lib/id";
 import { prisma } from "@/lib/prisma";
+import { generateKeluargaId } from "@/lib/keluarga-service";
 
 const alamatSchema = z.object({
   idKelurahan: z.string().length(10),
@@ -58,11 +59,11 @@ export const GET = withErrorHandling(async (request) => {
     ...(idRayon ? { idRayon } : {}),
     ...(search
       ? {
-          OR: [
-            { nikKepala: { contains: search, mode: "insensitive" } },
-            { idKeluarga: { contains: search, mode: "insensitive" } },
-          ],
-        }
+        OR: [
+          { nikKepala: { contains: search, mode: "insensitive" } },
+          { idKeluarga: { contains: search, mode: "insensitive" } },
+        ],
+      }
       : {}),
   };
 
@@ -112,6 +113,18 @@ export const POST = withErrorHandling(async (request) => {
     throw new AppError("NIK kepala keluarga sudah terdaftar", 409);
   }
 
+  // ID Generation Logic
+  const newIdKeluarga = await generateKeluargaId(prisma, data.idRayon);
+
+  // Check collision (just in case)
+  const collision = await prisma.keluarga.findUnique({
+    where: { idKeluarga: newIdKeluarga },
+  });
+
+  if (collision) {
+    throw new AppError("Gagal men-generate ID unik, silakan coba lagi", 409);
+  }
+
   let alamatId = data.idAlamat ?? null;
 
   if (!alamatId && data.alamat) {
@@ -126,7 +139,7 @@ export const POST = withErrorHandling(async (request) => {
 
   const created = await prisma.keluarga.create({
     data: {
-      idKeluarga: data.idKeluarga ?? generateId(16),
+      idKeluarga: newIdKeluarga,
       nikKepala: data.nikKepala,
       idAlamat: alamatId!,
       idStatusKepemilikan: data.idStatusKepemilikan,

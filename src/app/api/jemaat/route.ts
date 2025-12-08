@@ -7,6 +7,7 @@ import { withErrorHandling } from "@/lib/api-handler";
 import { AppError, NotFoundError } from "@/lib/errors";
 import { generateId } from "@/lib/id";
 import { prisma } from "@/lib/prisma";
+import { generateKeluargaId } from "@/lib/keluarga-service";
 
 const keluargaBaruSchema = z.object({
   nikKepala: z.string().length(16),
@@ -120,9 +121,12 @@ const resolveKeluargaId = async (
       throw new AppError("NIK kepala keluarga sudah terdaftar", 409);
     }
 
+    // ID Generation Logic for Jemaat Creation
+    const newIdKeluarga = await generateKeluargaId(tx, payload.keluargaBaru.idRayon);
+
     const keluarga = await tx.keluarga.create({
       data: {
-        idKeluarga: generateId(16),
+        idKeluarga: newIdKeluarga,
         nikKepala: payload.keluargaBaru.nikKepala,
         idAlamat: alamat.idAlamat,
         idStatusKepemilikan: payload.keluargaBaru.idStatusKepemilikan,
@@ -212,6 +216,8 @@ export const POST = withErrorHandling(async (request) => {
       data: jemaatCreatePayload,
       include: includeOptions,
     });
+  }, {
+    timeout: 20000, // Increase timeout to 20s to prevent 'Transaction already closed' errors
   });
 
   return NextResponse.json(

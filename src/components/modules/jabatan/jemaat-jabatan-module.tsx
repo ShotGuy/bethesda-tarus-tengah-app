@@ -259,7 +259,7 @@ export default function JemaatJabatanModule({
                   name="idJemaat"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Jemaat</FormLabel>
+                      <FormLabel>Jemaat <span className="text-red-500">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger disabled={!!editingItem}>
@@ -283,7 +283,7 @@ export default function JemaatJabatanModule({
                   name="idJabatan"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Jabatan</FormLabel>
+                      <FormLabel>Jabatan <span className="text-red-500">*</span></FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger disabled={!!editingItem}>
@@ -308,9 +308,9 @@ export default function JemaatJabatanModule({
                     name="tanggalMulai"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tanggal Mulai</FormLabel>
+                        <FormLabel>Tanggal Mulai <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} disabled={!!editingItem} />
+                          <Input type="date" {...field} value={field.value ?? ""} disabled={!!editingItem} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -323,7 +323,7 @@ export default function JemaatJabatanModule({
                       <FormItem>
                         <FormLabel>Tanggal Berakhir</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="date" {...field} value={field.value ?? ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -337,7 +337,7 @@ export default function JemaatJabatanModule({
                     <FormItem>
                       <FormLabel>Catatan</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} value={field.value ?? ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

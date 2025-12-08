@@ -20,7 +20,7 @@ export default function JabatanClientPage({ initialData, masters }: Props) {
         queryKey: ["jabatan-assignments", filters],
         queryFn: () => getJabatanAction(filters),
         initialData: Object.keys(filters).length === 0 ? initialData : undefined,
-        staleTime: 2 * 60 * 1000,
+        staleTime: 1 * 60 * 1000,
     });
 
     return (

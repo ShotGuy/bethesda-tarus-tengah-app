@@ -61,7 +61,7 @@ export default function DashboardClientPage({
             return data as unknown as DashboardStats;
         },
         initialData: initialData,
-        staleTime: 2 * 60 * 1000, // 2 minutes
+        staleTime: 1 * 60 * 1000, // 1 minute
     });
 
     const statCards = [

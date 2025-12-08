@@ -465,7 +465,7 @@ export default function SakramenModule({
                       name="idJemaat"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Jemaat</FormLabel>
+                          <FormLabel>Jemaat <span className="text-red-500">*</span></FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger className="w-full">
@@ -489,7 +489,7 @@ export default function SakramenModule({
                       name="idKlasis"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Klasis</FormLabel>
+                          <FormLabel>Klasis <span className="text-red-500">*</span></FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger className="w-full">
@@ -513,9 +513,9 @@ export default function SakramenModule({
                       name="tanggal"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tanggal</FormLabel>
+                          <FormLabel>Tanggal <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input type="date" {...field} value={field.value ?? ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -578,7 +578,7 @@ export default function SakramenModule({
                       name="idJemaat"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Jemaat</FormLabel>
+                          <FormLabel>Jemaat <span className="text-red-500">*</span></FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger className="w-full">
@@ -602,7 +602,7 @@ export default function SakramenModule({
                       name="idKlasis"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Klasis</FormLabel>
+                          <FormLabel>Klasis <span className="text-red-500">*</span></FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger className="w-full">
@@ -626,9 +626,9 @@ export default function SakramenModule({
                       name="tanggal"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tanggal</FormLabel>
+                          <FormLabel>Tanggal <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input type="date" {...field} value={field.value ?? ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -691,7 +691,7 @@ export default function SakramenModule({
                       name="klasis"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Klasis</FormLabel>
+                          <FormLabel>Klasis <span className="text-red-500">*</span></FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger className="w-full">
@@ -715,9 +715,9 @@ export default function SakramenModule({
                       name="tanggal"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tanggal</FormLabel>
+                          <FormLabel>Tanggal <span className="text-red-500">*</span></FormLabel>
                           <FormControl>
-                            <Input type="date" {...field} />
+                            <Input type="date" {...field} value={field.value ?? ""} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -730,7 +730,7 @@ export default function SakramenModule({
                       name="jemaatIds"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>Pasangan 1</FormLabel>
+                          <FormLabel>Pasangan 1 <span className="text-red-500">*</span></FormLabel>
                           <Popover open={openCombobox1} onOpenChange={setOpenCombobox1}>
                             <PopoverTrigger asChild>
                               <FormControl>
@@ -798,7 +798,7 @@ export default function SakramenModule({
                       name="jemaatIds"
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
-                          <FormLabel>Pasangan 2</FormLabel>
+                          <FormLabel>Pasangan 2 <span className="text-red-500">*</span></FormLabel>
                           <Popover open={openCombobox2} onOpenChange={setOpenCombobox2}>
                             <PopoverTrigger asChild>
                               <FormControl>

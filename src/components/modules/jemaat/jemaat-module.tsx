@@ -1,13 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Search } from "lucide-react";
+import { Search, Eye, Pencil, Trash2, MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -113,6 +121,7 @@ export default function JemaatModule({
   onResetFilters
 }: Props) {
   const [items, setItems] = useState(initialData ?? []);
+  const router = useRouter();
 
   useMemo(() => {
     if (initialData) {
@@ -123,6 +132,7 @@ export default function JemaatModule({
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isExistingFamily, setIsExistingFamily] = useState(false);
 
   const filterConfig: FilterConfig[] = useMemo(() => [
     {
@@ -182,6 +192,7 @@ export default function JemaatModule({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
+    shouldUnregister: true, // Handle hidden fields validation
     defaultValues: {
       jenisKelamin: "L",
     },
@@ -196,20 +207,42 @@ export default function JemaatModule({
 
   const isKepala = !!statusLabel && normalizeStatus(statusLabel);
 
+  // EFECT: Explicitly clean up form values when modes switch to prevent phantom validation errors
+  useEffect(() => {
+    if (isKepala) {
+      // If Head: Unregister the simple NIK field (we use idJemaat or new family)
+      form.unregister("nikKepalaKeluarga");
+
+      if (isExistingFamily) {
+        // If Existing Family: Unregister new family fields
+        form.unregister("keluargaBaru");
+      }
+    } else {
+      // If Not Head: Unregister new family fields
+      form.unregister("keluargaBaru");
+    }
+  }, [isKepala, isExistingFamily, form]);
+
   const handleSubmit = async (values: FormValues) => {
     try {
-      if (isKepala && !values.keluargaBaru && !editingId) {
+      if (isKepala && !isExistingFamily && !values.keluargaBaru && !editingId) {
         toast.error("Lengkapi data keluarga baru untuk kepala keluarga");
         return;
       }
 
-      if (!isKepala && !values.nikKepalaKeluarga) {
-        toast.error("Isi NIK kepala keluarga untuk jemaat non kepala");
+      // Automatically use idJemaat as nikKepalaKeluarga if linking to existing family as Head
+      let finalNikKepala = values.nikKepalaKeluarga;
+      if (isKepala && isExistingFamily) {
+        finalNikKepala = values.idJemaat;
+      }
+
+      if ((!isKepala) && !finalNikKepala) {
+        toast.error("Isi NIK kepala keluarga untuk menghubungkan");
         return;
       }
 
       const headPayload =
-        isKepala && values.keluargaBaru
+        isKepala && !isExistingFamily && values.keluargaBaru
           ? {
             nikKepala: values.keluargaBaru.nikKepala,
             idStatusKepemilikan: values.keluargaBaru.idStatusKepemilikan,
@@ -226,6 +259,7 @@ export default function JemaatModule({
 
       const payload = {
         ...values,
+        nikKepalaKeluarga: finalNikKepala,
         jenisKelamin: values.jenisKelamin === "L",
         keluargaBaru: headPayload,
       };
@@ -319,6 +353,10 @@ export default function JemaatModule({
     }
   };
 
+  const handleDetail = (item: Jemaat) => {
+    router.push(`/jemaat/${encodeURIComponent(item.idJemaat)}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -338,16 +376,19 @@ export default function JemaatModule({
               <DialogTitle>Tambah Jemaat</DialogTitle>
             </DialogHeader>
             <Form {...form}>
-              <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmit)}>
+              <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmit, (errors) => {
+                console.error("Validation errors:", errors);
+                toast.error("Mohon lengkapi data yang valid");
+              })}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="idJemaat"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>ID Jemaat (NIK)</FormLabel>
+                        <FormLabel>ID Jemaat (NIK) <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
-                          <Input {...field} disabled={!!editingId} />
+                          <Input {...field} value={field.value ?? ""} disabled={!!editingId} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -358,9 +399,9 @@ export default function JemaatModule({
                     name="nama"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Nama Lengkap</FormLabel>
+                        <FormLabel>Nama Lengkap <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} value={field.value ?? ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -371,7 +412,7 @@ export default function JemaatModule({
                     name="jenisKelamin"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Jenis Kelamin</FormLabel>
+                        <FormLabel>Jenis Kelamin <span className="text-red-500">*</span></FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className="w-full">
@@ -392,9 +433,9 @@ export default function JemaatModule({
                     name="tanggalLahir"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tanggal Lahir</FormLabel>
+                        <FormLabel>Tanggal Lahir <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="date" {...field} value={field.value ?? ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -405,7 +446,7 @@ export default function JemaatModule({
                     name="statusDalamKel"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Status Dalam Keluarga</FormLabel>
+                        <FormLabel>Status Dalam Keluarga <span className="text-red-500">*</span></FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger className="w-full">
@@ -433,9 +474,20 @@ export default function JemaatModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Golongan Darah</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Pilih Golongan Darah" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {["A", "B", "AB", "O"].map((darah) => (
+                              <SelectItem key={darah} value={darah}>
+                                {darah}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -546,7 +598,7 @@ export default function JemaatModule({
                       <FormItem>
                         <FormLabel>NIK Kepala Keluarga</FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input {...field} value={field.value ?? ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -556,170 +608,193 @@ export default function JemaatModule({
 
                 {isKepala && !editingId && (
                   <div className="space-y-4 rounded-lg border p-4">
-                    <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                      Data Keluarga Baru
-                    </h4>
-                    <FormField
-                      control={form.control}
-                      name="keluargaBaru.nikKepala"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>NIK Kepala Keluarga</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <FormField
-                        control={form.control}
-                        name="keluargaBaru.idStatusKepemilikan"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Status Kepemilikan Rumah</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Pilih" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {masters.statusKepemilikan.map((item) => (
-                                  <SelectItem
-                                    key={item.idStatusKepemilikan}
-                                    value={item.idStatusKepemilikan}
-                                  >
-                                    {item.status}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="existingFamily"
+                        checked={isExistingFamily}
+                        onCheckedChange={(c) => setIsExistingFamily(!!c)}
                       />
-                      <FormField
-                        control={form.control}
-                        name="keluargaBaru.idStatusTanah"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Status Tanah</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Pilih" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {masters.statusTanah.map((item) => (
-                                  <SelectItem
-                                    key={item.idStatusTanah}
-                                    value={item.idStatusTanah}
-                                  >
-                                    {item.status}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="keluargaBaru.idRayon"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Rayon</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Pilih" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {masters.rayon.map((item) => (
-                                  <SelectItem key={item.idRayon} value={item.idRayon}>
-                                    {item.namaRayon}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="keluargaBaru.idKelurahan"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Kelurahan</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Pilih" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {masters.kelurahan.map((item) => (
-                                  <SelectItem
-                                    key={item.idKelurahan}
-                                    value={item.idKelurahan}
-                                  >
-                                    {item.nama}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="keluargaBaru.jalan"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nama Jalan</FormLabel>
-                            <FormControl>
-                              <Input {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="keluargaBaru.RT"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>RT</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="keluargaBaru.RW"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>RW</FormLabel>
-                              <FormControl>
-                                <Input type="number" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                      <label
+                        htmlFor="existingFamily"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Keluarga Sudah Terdaftar?
+                      </label>
                     </div>
+
+                    {isExistingFamily ? (
+                      <div className="rounded bg-muted p-3 text-sm text-muted-foreground mt-2">
+                        Sistem akan otomatis menghubungkan jemaat ini ke data Keluarga dengan NIK yang sama (<b>{form.watch("idJemaat") || "..."}</b>).
+                        Pastikan data Keluarga sudah dibuat sebelumnya di menu Keluarga.
+                      </div>
+                    ) : (
+                      <>
+                        <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mt-4">
+                          Data Keluarga Baru
+                        </h4>
+                        <FormField
+                          control={form.control}
+                          name="keluargaBaru.nikKepala"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>NIK Kepala Keluarga <span className="text-red-500">*</span></FormLabel>
+                              <FormControl>
+                                <Input {...field} value={field.value ?? ""} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <FormField
+                            control={form.control}
+                            name="keluargaBaru.idStatusKepemilikan"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Status Kepemilikan Rumah <span className="text-red-500">*</span></FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Pilih" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {masters.statusKepemilikan.map((item) => (
+                                      <SelectItem
+                                        key={item.idStatusKepemilikan}
+                                        value={item.idStatusKepemilikan}
+                                      >
+                                        {item.status}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="keluargaBaru.idStatusTanah"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Status Tanah <span className="text-red-500">*</span></FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Pilih" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {masters.statusTanah.map((item) => (
+                                      <SelectItem
+                                        key={item.idStatusTanah}
+                                        value={item.idStatusTanah}
+                                      >
+                                        {item.status}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="keluargaBaru.idRayon"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Rayon <span className="text-red-500">*</span></FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Pilih" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {masters.rayon.map((item) => (
+                                      <SelectItem key={item.idRayon} value={item.idRayon}>
+                                        {item.namaRayon}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="keluargaBaru.idKelurahan"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Kelurahan <span className="text-red-500">*</span></FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="Pilih" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {masters.kelurahan.map((item) => (
+                                      <SelectItem
+                                        key={item.idKelurahan}
+                                        value={item.idKelurahan}
+                                      >
+                                        {item.nama}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="keluargaBaru.jalan"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Nama Jalan <span className="text-red-500">*</span></FormLabel>
+                                <FormControl>
+                                  <Input {...field} value={field.value ?? ""} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="keluargaBaru.RT"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>RT <span className="text-red-500">*</span></FormLabel>
+                                  <FormControl>
+                                    <Input type="number" {...field} value={field.value ?? ""} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="keluargaBaru.RW"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>RW <span className="text-red-500">*</span></FormLabel>
+                                  <FormControl>
+                                    <Input type="number" {...field} value={field.value ?? ""} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                   </div>
                 )}
@@ -752,7 +827,7 @@ export default function JemaatModule({
         />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      <div className="hidden md:block overflow-x-auto rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
@@ -781,15 +856,102 @@ export default function JemaatModule({
                   <TableCell>{item.nama}</TableCell>
                   <TableCell>{item.status?.status ?? "-"}</TableCell>
                   <TableCell>{item.keluarga?.rayon?.namaRayon ?? "-"}</TableCell>
-                  <TableCell className="space-x-2 text-right">
-                    <Button size="sm" variant="outline" onClick={() => handleEdit(item)}>Edit</Button>
-                    <Button size="sm" variant="destructive" onClick={() => handleDelete(item.idJemaat)}>Hapus</Button>
+                  <TableCell className="space-x-1 text-right whitespace-nowrap">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                      onClick={() => handleDetail(item)}
+                      title="Lihat Detail"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-amber-600"
+                      onClick={() => handleEdit(item)}
+                      title="Edit"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDelete(item.idJemaat)}
+                      title="Hapus"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Grid View */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+              <div className="h-6 w-48 animate-pulse rounded bg-muted" />
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+              <div className="flex gap-2 pt-2">
+                <div className="h-8 w-12 animate-pulse rounded bg-muted" />
+                <div className="h-8 w-12 animate-pulse rounded bg-muted" />
+                <div className="h-8 w-12 animate-pulse rounded bg-muted" />
+              </div>
+            </div>
+          ))
+        ) : (
+          filteredItems.map((item) => (
+            <div key={item.idJemaat} className="rounded-lg border bg-card p-4 shadow-sm hover:bg-accent/50 transition-colors">
+              <div className="flex flex-col space-y-1.5">
+                <span className="text-xs font-mono text-muted-foreground">ID Jemaat:</span>
+                <span className="font-mono text-sm font-medium">{item.idJemaat}</span>
+              </div>
+
+              <div className="mt-3 flex flex-col space-y-1">
+                <span className="text-xs text-muted-foreground">Nama:</span>
+                <span className="font-bold text-base">{item.nama}</span>
+              </div>
+
+              <div className="mt-3 pb-3 border-b flex flex-col space-y-1">
+                <span className="text-xs text-muted-foreground">Gender:</span>
+                <span className="font-medium text-sm">{item.jenisKelamin ? "Laki-laki" : "Perempuan"}</span>
+              </div>
+
+              <div className="flex items-center gap-2 mt-3">
+                <Button variant="outline" size="icon" onClick={() => handleDetail(item)}>
+                  <Eye className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => handleEdit(item)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => handleDelete(item.idJemaat)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Hapus
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

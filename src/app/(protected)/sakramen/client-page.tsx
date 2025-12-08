@@ -25,7 +25,7 @@ export default function SakramenClientPage({ initialData, masters, initialTab }:
         queryKey: ["sakramen", filters],
         queryFn: () => getSakramenAction(filters),
         initialData: Object.keys(filters).length === 0 ? initialData : undefined,
-        staleTime: 2 * 60 * 1000,
+        staleTime: 1 * 60 * 1000,
     });
 
     return (

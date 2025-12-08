@@ -20,7 +20,7 @@ export default function KeluargaClientPage({
         queryKey: ["keluarga", filters],
         queryFn: () => getKeluargaAction(filters),
         initialData: initialData,
-        staleTime: 2 * 60 * 1000, // 2 minutes
+        staleTime: 1 * 60 * 1000, // 1 minute
     });
 
     return (
