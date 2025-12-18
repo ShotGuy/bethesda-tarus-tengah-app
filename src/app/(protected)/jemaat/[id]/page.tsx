@@ -80,7 +80,7 @@ export default async function DetailJemaatPage({ params }: DetailJemaatPageProps
         notFound();
     }
 
-    const kepalaKeluarga = jemaat.keluarga.jemaat?.find((j: any) => j.idJemaat === jemaat.keluarga.nikKepala);
+    const kepalaKeluarga = jemaat.keluarga.jemaat?.find((j: any) => j.status?.status.toLowerCase().includes("kepala"));
 
     return (
         <div className="space-y-6">

@@ -60,7 +60,7 @@ export default async function DetailKeluargaPage({ params }: DetailKeluargaPageP
         notFound();
     }
 
-    const kepalaKeluarga = keluarga.jemaat.find((j) => j.idJemaat === keluarga.nikKepala);
+    const kepalaKeluarga = keluarga.jemaat.find((j) => j.status?.status.toLowerCase().includes("kepala"));
 
     return (
         <div className="space-y-6">
@@ -172,7 +172,7 @@ export default async function DetailKeluargaPage({ params }: DetailKeluargaPageP
                                 <TableRow key={anggota.idJemaat}>
                                     <TableCell className="font-medium">
                                         {anggota.nama}
-                                        {anggota.idJemaat === keluarga.nikKepala && (
+                                        {anggota.status?.status.toLowerCase().includes("kepala") && (
                                             <Badge variant="secondary" className="ml-2 text-[10px]">Kepala</Badge>
                                         )}
                                     </TableCell>

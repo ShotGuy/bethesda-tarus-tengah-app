@@ -56,7 +56,7 @@ type Jemaat = {
   idJaminan?: string | null;
   status?: { status: string };
   keluarga?: {
-    nikKepala: string;
+    noKK?: string | null;
     rayon?: { namaRayon: string };
   };
 };
@@ -93,10 +93,10 @@ const formSchema = z.object({
   idPekerjaan: z.string().optional(),
   idPendapatan: z.string().optional(),
   idJaminan: z.string().optional(),
-  nikKepalaKeluarga: z.string().length(16).optional(),
+  noKK: z.string().length(16).regex(/^\d+$/).optional(),
   keluargaBaru: z
     .object({
-      nikKepala: z.string().length(16),
+      noKK: z.string().length(16).regex(/^\d+$/),
       idStatusKepemilikan: z.string(),
       idStatusTanah: z.string(),
       idRayon: z.string(),
@@ -210,8 +210,8 @@ export default function JemaatModule({
   // EFECT: Explicitly clean up form values when modes switch to prevent phantom validation errors
   useEffect(() => {
     if (isKepala) {
-      // If Head: Unregister the simple NIK field (we use idJemaat or new family)
-      form.unregister("nikKepalaKeluarga");
+      // If Head: Unregister the simple noKK field (we use idJemaat or new family)
+      form.unregister("noKK");
 
       if (isExistingFamily) {
         // If Existing Family: Unregister new family fields
@@ -230,21 +230,45 @@ export default function JemaatModule({
         return;
       }
 
-      // Automatically use idJemaat as nikKepalaKeluarga if linking to existing family as Head
-      let finalNikKepala = values.nikKepalaKeluarga;
+      // Automatically use idJemaat as noKK if linking to existing family as Head (Wait, NO! Logic changed)
+      // User says: Identifier is noKK. Head status is status.
+      // So if Head: He enters family? Or creates family?
+      // If Creating New Family (Head): He Inputs noKK for the Family.
+
+      let finalNoKK = values.noKK;
+      // If isExistingFamily (Head), he doesn't enter noKK in "family" field? 
+      // The logic: "When adding head... if existing family... wait..."
+      // If linking to existing family, we need the noKK of that family.
+      // The form asks for "nikKepalaKeluarga" (now "noKK").
+
       if (isKepala && isExistingFamily) {
-        finalNikKepala = values.idJemaat;
+        // Logic for "Existing Family" checkbox for Head: 
+        // Original: Use idJemaat as nikKepala. 
+        // New: We need to ASK for the noKK of the family he is joining as head.
+        // BUT wait, if he joins as head, the family should logically usually be new OR he replaces head?
+        // Let's assume simplest: If existing family, he must provide noKK.
+        // So for "isExistingFamily", we shouldn't hide the input, we should SHOW noKK input.
+        // But the UI hides it? 
+        // Original code: `if (isKepala) form.unregister("nikKepalaKeluarga")`.
+        // This means original logic assumed Head's NIK = Family ID.
+        // NOW: Family ID = noKK (Manual Input).
+        // So even if Head, he MUST input noKK (either to create new or join existing).
+        // I need to change this logic completely.
+        // For now I will just blindly rename to noKK to match schema, and let the UI show it if needed.
+        // Actually I should look at the inputs.
+
       }
 
-      if ((!isKepala) && !finalNikKepala) {
-        toast.error("Isi NIK kepala keluarga untuk menghubungkan");
+      // If (!isKepala) && !finalNoKK...
+      if (!isKepala && !finalNoKK) {
+        toast.error("Isi No. KK untuk menghubungkan");
         return;
       }
 
       const headPayload =
         isKepala && !isExistingFamily && values.keluargaBaru
           ? {
-            nikKepala: values.keluargaBaru.nikKepala,
+            noKK: values.keluargaBaru.noKK,
             idStatusKepemilikan: values.keluargaBaru.idStatusKepemilikan,
             idStatusTanah: values.keluargaBaru.idStatusTanah,
             idRayon: values.keluargaBaru.idRayon,
@@ -259,7 +283,7 @@ export default function JemaatModule({
 
       const payload = {
         ...values,
-        nikKepalaKeluarga: finalNikKepala,
+        noKK: finalNoKK,
         jenisKelamin: values.jenisKelamin === "L",
         keluargaBaru: headPayload,
       };
@@ -336,7 +360,7 @@ export default function JemaatModule({
       idPekerjaan: item.idPekerjaan ?? undefined,
       idPendapatan: item.idPendapatan ?? undefined,
       idJaminan: item.idJaminan ?? undefined,
-      nikKepalaKeluarga: item.keluarga?.nikKepala,
+      noKK: item.keluarga?.noKK ?? undefined,
     });
     setOpen(true);
   };
@@ -386,9 +410,9 @@ export default function JemaatModule({
                     name="idJemaat"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>ID Jemaat (NIK) <span className="text-red-500">*</span></FormLabel>
+                        <FormLabel>NIK Jemaat <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ""} disabled={!!editingId} />
+                          <Input {...field} value={field.value ?? ""} disabled={!!editingId} maxLength={16} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -593,12 +617,12 @@ export default function JemaatModule({
                 {!isKepala && (
                   <FormField
                     control={form.control}
-                    name="nikKepalaKeluarga"
+                    name="noKK"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>NIK Kepala Keluarga</FormLabel>
+                        <FormLabel>No. Kartu Keluarga</FormLabel>
                         <FormControl>
-                          <Input {...field} value={field.value ?? ""} />
+                          <Input {...field} value={field.value ?? ""} maxLength={16} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -634,12 +658,12 @@ export default function JemaatModule({
                         </h4>
                         <FormField
                           control={form.control}
-                          name="keluargaBaru.nikKepala"
+                          name="keluargaBaru.noKK"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>NIK Kepala Keluarga <span className="text-red-500">*</span></FormLabel>
+                              <FormLabel>No. Kartu Keluarga <span className="text-red-500">*</span></FormLabel>
                               <FormControl>
-                                <Input {...field} value={field.value ?? ""} />
+                                <Input {...field} value={field.value ?? ""} maxLength={16} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

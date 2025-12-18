@@ -23,7 +23,7 @@ export async function getKeluargaAction(filters?: Record<string, string>) {
 
         const data = await prisma.keluarga.findMany({
             where,
-            orderBy: { nikKepala: "asc" },
+            orderBy: { idKeluarga: "asc" },
             include: {
                 alamat: {
                     include: {

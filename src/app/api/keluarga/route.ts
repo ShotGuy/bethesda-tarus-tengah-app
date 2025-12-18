@@ -17,7 +17,7 @@ const alamatSchema = z.object({
 
 const createSchema = z.object({
   idKeluarga: z.string().length(16).optional(),
-  nikKepala: z.string().length(16),
+  noKK: z.string().length(16).regex(/^\d+$/).optional(),
   idAlamat: z.string().length(10).optional(),
   alamat: alamatSchema.optional(),
   idStatusKepemilikan: z.string().length(10),
@@ -60,7 +60,7 @@ export const GET = withErrorHandling(async (request) => {
     ...(search
       ? {
         OR: [
-          { nikKepala: { contains: search, mode: "insensitive" } },
+          { noKK: { contains: search, mode: "insensitive" } },
           { idKeluarga: { contains: search, mode: "insensitive" } },
         ],
       }
@@ -72,7 +72,7 @@ export const GET = withErrorHandling(async (request) => {
       where,
       skip,
       take: limit,
-      orderBy: { nikKepala: "asc" },
+      orderBy: { idKeluarga: "asc" },
       include: includeOptions,
     }),
     prisma.keluarga.count({ where }),
@@ -146,12 +146,14 @@ export const POST = withErrorHandling(async (request) => {
     throw new AppError("Alamat wajib diisi (pilih atau buat baru)", 400);
   }
 
-  const existingNik = await prisma.keluarga.findUnique({
-    where: { nikKepala: data.nikKepala },
-  });
+  if (data.noKK) {
+    const existingNoKK = await prisma.keluarga.findFirst({
+      where: { noKK: data.noKK },
+    });
 
-  if (existingNik) {
-    throw new AppError("NIK kepala keluarga sudah terdaftar", 409);
+    if (existingNoKK) {
+      throw new AppError("No. Kartu Keluarga sudah terdaftar", 409);
+    }
   }
 
   const newIdKeluarga = await generateKeluargaId(prisma, data.idRayon);
@@ -180,7 +182,7 @@ export const POST = withErrorHandling(async (request) => {
   const created = await prisma.keluarga.create({
     data: {
       idKeluarga: newIdKeluarga,
-      nikKepala: data.nikKepala,
+      noKK: data.noKK,
       idAlamat: alamatId!,
       idStatusKepemilikan: data.idStatusKepemilikan,
       idRayon: data.idRayon,

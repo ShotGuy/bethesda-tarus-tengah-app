@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { generateKeluargaId } from "@/lib/keluarga-service";
 
 const keluargaBaruSchema = z.object({
-  nikKepala: z.string().length(16),
+  noKK: z.string().length(16).regex(/^\d+$/),
   idStatusKepemilikan: z.string().length(10),
   idRayon: z.string().length(10),
   idStatusTanah: z.string().length(10),
@@ -40,7 +40,7 @@ const jemaatSchema = z.object({
 
 const createSchema = jemaatSchema.extend({
   idKeluarga: z.string().length(16).optional(),
-  nikKepalaKeluarga: z.string().length(16).optional(),
+  noKK: z.string().length(16).regex(/^\d+$/).optional(),
   keluargaBaru: keluargaBaruSchema.optional(),
 });
 
@@ -90,14 +90,14 @@ const resolveKeluargaId = async (
     return payload.idKeluarga;
   }
 
-  if (payload.nikKepalaKeluarga) {
+  if (payload.noKK) {
     const keluarga = await tx.keluarga.findUnique({
-      where: { nikKepala: payload.nikKepalaKeluarga },
+      where: { noKK: payload.noKK },
       select: { idKeluarga: true },
     });
 
     if (!keluarga) {
-      throw new NotFoundError("Keluarga dengan NIK tersebut tidak ditemukan");
+      throw new NotFoundError("Keluarga dengan No. KK tersebut tidak ditemukan");
     }
 
     return keluarga.idKeluarga;
@@ -110,15 +110,15 @@ const resolveKeluargaId = async (
         ...payload.keluargaBaru.alamat,
       },
     });
-    // Ensure nikKepala is not already registered (unique constraint)
+    // Ensure noKK is not already registered (unique constraint)
     const existing = await tx.keluarga.findUnique({
-      where: { nikKepala: payload.keluargaBaru.nikKepala },
+      where: { noKK: payload.keluargaBaru.noKK },
       select: { idKeluarga: true },
     });
 
     if (existing) {
       // No need to manually delete alamat, transaction rollback will handle it
-      throw new AppError("NIK kepala keluarga sudah terdaftar", 409);
+      throw new AppError("No. Kartu Keluarga sudah terdaftar", 409);
     }
 
     // ID Generation Logic for Jemaat Creation
@@ -127,7 +127,7 @@ const resolveKeluargaId = async (
     const keluarga = await tx.keluarga.create({
       data: {
         idKeluarga: newIdKeluarga,
-        nikKepala: payload.keluargaBaru.nikKepala,
+        noKK: payload.keluargaBaru.noKK,
         idAlamat: alamat.idAlamat,
         idStatusKepemilikan: payload.keluargaBaru.idStatusKepemilikan,
         idRayon: payload.keluargaBaru.idRayon,

@@ -54,7 +54,7 @@ import {
 
 type Keluarga = {
   idKeluarga: string;
-  nikKepala: string;
+  noKK?: string | null;
   idRayon: string;
   idStatusKepemilikan: string;
   idStatusTanah: string;
@@ -67,7 +67,11 @@ type Keluarga = {
   };
   rayon?: { namaRayon: string };
   statusKepemilikan?: { status: string };
-  jemaat?: Array<{ idJemaat: string; nama: string }>;
+  jemaat?: Array<{
+    idJemaat: string;
+    nama: string;
+    status?: { status: string };
+  }>;
 };
 
 type Masters = {
@@ -87,7 +91,7 @@ type Props = {
 };
 
 const schema = z.object({
-  nikKepala: z.string().length(16),
+  noKK: z.string().length(16).regex(/^\d+$/, "Harus 16 digit angka"),
   idStatusKepemilikan: z.string(),
   idStatusTanah: z.string(),
   idRayon: z.string(),
@@ -152,15 +156,14 @@ export default function KeluargaModule({
     if (!searchQuery) return items;
     const lowerQuery = searchQuery.toLowerCase();
     return items.filter((item) => {
-      const noKK = item.idKeluarga.toLowerCase();
-      const nikKepala = item.nikKepala.toLowerCase();
+      const noKK = (item.noKK ?? "").toLowerCase();
+
 
       // Find head name
-      const headName = item.jemaat?.find((j) => j.idJemaat === item.nikKepala)?.nama.toLowerCase() ?? "";
+      const headName = item.jemaat?.find((j) => j.status?.status.toLowerCase().includes("kepala"))?.nama.toLowerCase() ?? "";
 
       return (
         noKK.includes(lowerQuery) ||
-        nikKepala.includes(lowerQuery) ||
         headName.includes(lowerQuery)
       );
     });
@@ -173,7 +176,7 @@ export default function KeluargaModule({
   const handleSubmit = async (values: FormValues) => {
     try {
       const payload = {
-        nikKepala: values.nikKepala,
+        noKK: values.noKK,
         idStatusKepemilikan: values.idStatusKepemilikan,
         idStatusTanah: values.idStatusTanah,
         idRayon: values.idRayon,
@@ -237,7 +240,7 @@ export default function KeluargaModule({
   const handleEdit = (item: Keluarga) => {
     setEditingId(item.idKeluarga);
     form.reset({
-      nikKepala: item.nikKepala,
+      noKK: item.noKK ?? "",
       idStatusKepemilikan: item.idStatusKepemilikan,
       idStatusTanah: item.idStatusTanah,
       idRayon: item.idRayon,
@@ -295,12 +298,12 @@ export default function KeluargaModule({
               <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmit)}>
                 <FormField
                   control={form.control}
-                  name="nikKepala"
+                  name="noKK"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>NIK Kepala Keluarga <span className="text-red-500">*</span></FormLabel>
+                      <FormLabel>No. Kartu Keluarga <span className="text-red-500">*</span></FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value ?? ""} disabled={!!editingId} />
+                        <Input {...field} value={field.value ?? ""} disabled={!!editingId} maxLength={16} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -503,6 +506,7 @@ export default function KeluargaModule({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>No. Kartu Keluarga</TableHead>
               <TableHead>ID Keluarga</TableHead>
               <TableHead>Nama Kepala Keluarga</TableHead>
               <TableHead>Rayon</TableHead>
@@ -523,9 +527,12 @@ export default function KeluargaModule({
               ))
             ) : (
               filteredItems.map((item) => {
-                const kepala = item.jemaat?.find((j) => j.idJemaat === item.nikKepala);
+                // Find head name based on Status "Kepala Keluarga" (needs precise logic or master ID)
+                // Since we don't have head ID anymore, we filter jemaat list
+                const kepala = item.jemaat?.find((j) => j.status?.status.toLowerCase().includes("kepala"));
                 return (
                   <TableRow key={item.idKeluarga}>
+                    <TableCell className="font-mono text-sm">{item.noKK ?? "-"}</TableCell>
                     <TableCell className="font-mono text-sm">{item.idKeluarga}</TableCell>
                     <TableCell>{kepala?.nama ?? "Tanpa Kepala Keluarga"}</TableCell>
                     <TableCell>{item.rayon?.namaRayon ?? "-"}</TableCell>
@@ -600,9 +607,13 @@ export default function KeluargaModule({
           ))
         ) : (
           filteredItems.map((item) => {
-            const kepala = item.jemaat?.find((j) => j.idJemaat === item.nikKepala);
+            const kepala = item.jemaat?.find((j) => j.status?.status.toLowerCase().includes("kepala"));
             return (
               <div key={item.idKeluarga} className="rounded-lg border bg-card p-4 shadow-sm hover:bg-accent/50 transition-colors">
+                <div className="flex flex-col space-y-1.5">
+                  <span className="text-xs font-mono text-muted-foreground">No. KK:</span>
+                  <span className="font-mono text-sm font-medium">{item.noKK ?? "-"}</span>
+                </div>
                 <div className="flex flex-col space-y-1.5">
                   <span className="text-xs font-mono text-muted-foreground">ID Keluarga:</span>
                   <span className="font-mono text-sm font-medium">{item.idKeluarga}</span>
