@@ -73,13 +73,26 @@ type MasterCollections = {
   kelurahan: Array<{ idKelurahan: string; nama: string }>;
 };
 
+import { PaginationControls } from "@/components/ui/pagination-controls";
+
 type Props = {
-  initialData: Jemaat[] | undefined;
+  data: Jemaat[];
+  metadata: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
   masters: MasterCollections;
   isLoading?: boolean;
   filters: Record<string, string>;
   onFilterChange: (key: string, value: string) => void;
   onResetFilters: () => void;
+  onPageChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  onDataChange: () => void;
 };
 
 const formSchema = z.object({
@@ -113,25 +126,24 @@ type FormValues = z.infer<typeof formSchema>;
 const normalizeStatus = (value: string) => value.toLowerCase().includes("kepala");
 
 export default function JemaatModule({
-  initialData,
+  data,
+  metadata,
   masters,
   isLoading,
   filters,
   onFilterChange,
-  onResetFilters
+  onResetFilters,
+  onPageChange,
+  onLimitChange,
+  searchQuery,
+  onSearchChange,
+  onDataChange,
 }: Props) {
-  const [items, setItems] = useState(initialData ?? []);
+  const items = data;
   const router = useRouter();
-
-  useMemo(() => {
-    if (initialData) {
-      setItems(initialData);
-    }
-  }, [initialData]);
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isExistingFamily, setIsExistingFamily] = useState(false);
 
   const filterConfig: FilterConfig[] = useMemo(() => [
@@ -179,16 +191,6 @@ export default function JemaatModule({
       options: masters.statusTanah.map((s) => ({ label: s.status, value: s.idStatusTanah })),
     },
   ], [masters]);
-
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) return items;
-    const lowerQuery = searchQuery.toLowerCase();
-    return items.filter(
-      (item) =>
-        item.nama.toLowerCase().includes(lowerQuery) ||
-        item.idJemaat.toLowerCase().includes(lowerQuery)
-    );
-  }, [items, searchQuery]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -314,7 +316,8 @@ export default function JemaatModule({
           throw new Error(data?.message ?? "Gagal memperbarui jemaat");
         }
 
-        setItems((prev) => prev.map((it) => (it.idJemaat === editingId ? data.data : it)));
+        // setItems((prev) => prev.map((it) => (it.idJemaat === editingId ? data.data : it)));
+        onDataChange();
         setEditingId(null);
         setOpen(false);
         form.reset();
@@ -332,7 +335,8 @@ export default function JemaatModule({
           throw new Error(data?.message ?? "Gagal menambahkan jemaat");
         }
 
-        setItems((prev) => [data.data, ...prev]);
+        // setItems((prev) => [data.data, ...prev]);
+        onDataChange();
         setOpen(false);
         form.reset();
         toast.success("Jemaat berhasil ditambahkan");
@@ -370,7 +374,8 @@ export default function JemaatModule({
       const res = await fetch(`/api/jemaat/${id}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message ?? "Gagal menghapus jemaat");
-      setItems((prev) => prev.filter((it) => it.idJemaat !== id));
+      // setItems((prev) => prev.filter((it) => it.idJemaat !== id));
+      onDataChange();
       toast.success("Jemaat berhasil dihapus");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
@@ -838,7 +843,7 @@ export default function JemaatModule({
           <Input
             placeholder="Cari berdasarkan NIK atau Nama..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9"
           />
         </div>
@@ -855,11 +860,13 @@ export default function JemaatModule({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>ID Jemaat</TableHead>
+              <TableHead>NIK</TableHead>
               <TableHead>Nama</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>L/P</TableHead>
+              <TableHead>Tanggal Lahir</TableHead>
+              <TableHead>Status Keluarga</TableHead>
               <TableHead>Rayon</TableHead>
-              <TableHead className="w-32 text-right">Aksi</TableHead>
+              <TableHead className="w-24 text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -868,16 +875,32 @@ export default function JemaatModule({
                 <TableRow key={i}>
                   <TableCell><div className="h-4 w-24 animate-pulse rounded bg-muted" /></TableCell>
                   <TableCell><div className="h-4 w-32 animate-pulse rounded bg-muted" /></TableCell>
-                  <TableCell><div className="h-4 w-20 animate-pulse rounded bg-muted" /></TableCell>
+                  <TableCell><div className="h-4 w-8 animate-pulse rounded bg-muted" /></TableCell>
+                  <TableCell><div className="h-4 w-24 animate-pulse rounded bg-muted" /></TableCell>
+                  <TableCell><div className="h-4 w-24 animate-pulse rounded bg-muted" /></TableCell>
                   <TableCell><div className="h-4 w-16 animate-pulse rounded bg-muted" /></TableCell>
                   <TableCell className="text-right"><div className="ml-auto h-8 w-16 animate-pulse rounded bg-muted" /></TableCell>
                 </TableRow>
               ))
+            ) : items.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">
+                  Belum ada data jemaat.
+                </TableCell>
+              </TableRow>
             ) : (
-              filteredItems.map((item) => (
+              items.map((item) => (
                 <TableRow key={item.idJemaat}>
-                  <TableCell className="font-mono text-sm">{item.idJemaat}</TableCell>
-                  <TableCell>{item.nama}</TableCell>
+                  <TableCell className="font-mono text-xs">{item.idJemaat}</TableCell>
+                  <TableCell className="font-medium">{item.nama}</TableCell>
+                  <TableCell>{item.jenisKelamin ? "L" : "P"}</TableCell>
+                  <TableCell>
+                    {new Date(item.tanggalLahir).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </TableCell>
                   <TableCell>{item.status?.status ?? "-"}</TableCell>
                   <TableCell>{item.keluarga?.rayon?.namaRayon ?? "-"}</TableCell>
                   <TableCell className="space-x-1 text-right whitespace-nowrap">
@@ -916,6 +939,16 @@ export default function JemaatModule({
         </Table>
       </div>
 
+      <PaginationControls
+        page={metadata.page}
+        limit={metadata.limit}
+        totalCount={metadata.total}
+        totalPages={metadata.totalPages}
+        onPageChange={onPageChange}
+        onLimitChange={onLimitChange}
+        isLoading={isLoading}
+      />
+
       {/* Mobile Grid View */}
       <div className="grid grid-cols-1 gap-4 md:hidden">
         {isLoading ? (
@@ -931,11 +964,15 @@ export default function JemaatModule({
               </div>
             </div>
           ))
+        ) : items.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground border rounded-lg bg-card">
+            Belum ada data jemaat.
+          </div>
         ) : (
-          filteredItems.map((item) => (
+          items.map((item) => (
             <div key={item.idJemaat} className="rounded-lg border bg-card p-4 shadow-sm hover:bg-accent/50 transition-colors">
               <div className="flex flex-col space-y-1.5">
-                <span className="text-xs font-mono text-muted-foreground">ID Jemaat:</span>
+                <span className="text-xs font-mono text-muted-foreground">NIK:</span>
                 <span className="font-mono text-sm font-medium">{item.idJemaat}</span>
               </div>
 

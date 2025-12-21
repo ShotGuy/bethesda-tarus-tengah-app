@@ -81,13 +81,26 @@ type Masters = {
   kelurahan: Array<{ idKelurahan: string; nama: string }>;
 };
 
+import { PaginationControls } from "@/components/ui/pagination-controls";
+
 type Props = {
-  initialData: Keluarga[] | undefined;
+  data: Keluarga[];
+  metadata: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
   masters: Masters;
   isLoading?: boolean;
   filters: Record<string, string>;
   onFilterChange: (key: string, value: string) => void;
   onResetFilters: () => void;
+  onPageChange: (page: number) => void;
+  onLimitChange: (limit: number) => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  onDataChange: () => void;
 };
 
 const schema = z.object({
@@ -104,24 +117,24 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema> & { fotoKartuKeluarga?: FileList };
 
 export default function KeluargaModule({
-  initialData,
+  data,
+  metadata,
   masters,
   isLoading,
   filters,
   onFilterChange,
-  onResetFilters
+  onResetFilters,
+  onPageChange,
+  onLimitChange,
+  searchQuery,
+  onSearchChange,
+  onDataChange,
 }: Props) {
-  const [items, setItems] = useState(initialData ?? []);
-
-  useMemo(() => {
-    if (initialData) {
-      setItems(initialData);
-    }
-  }, [initialData]);
+  // Use passed data directly, no local filtering
+  const items = data;
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const router = useRouter();
@@ -151,23 +164,6 @@ export default function KeluargaModule({
 
   // Handle file preview removal later if needed
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
-  const filteredItems = useMemo(() => {
-    if (!searchQuery) return items;
-    const lowerQuery = searchQuery.toLowerCase();
-    return items.filter((item) => {
-      const noKK = (item.noKK ?? "").toLowerCase();
-
-
-      // Find head name
-      const headName = item.jemaat?.find((j) => j.status?.status.toLowerCase().includes("kepala"))?.nama.toLowerCase() ?? "";
-
-      return (
-        noKK.includes(lowerQuery) ||
-        headName.includes(lowerQuery)
-      );
-    });
-  }, [items, searchQuery]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as any,
@@ -209,7 +205,13 @@ export default function KeluargaModule({
 
         const data = await res.json();
         if (!res.ok) throw new Error(data?.message ?? "Gagal memperbarui keluarga");
-        setItems((prev) => prev.map((it) => (it.idKeluarga === editingId ? data.data : it)));
+        // setItems((prev) => prev.map((it) => (it.idKeluarga === editingId ? data.data : it))); // CANNOT DO THIS ANYMORE
+        onResetFilters(); // Trigger refetch by resetting or we need explicit refetch. 
+        // Better: onDataChange()
+        // For now, let's just use onResetFilters() or similar to trigger state change? No.
+        // Let's rely on router.refresh() if using server, but we use useQuery.
+        // I'll add onDataChange prop.
+        onDataChange();
         setEditingId(null);
         setOpen(false);
         form.reset();
@@ -226,7 +228,8 @@ export default function KeluargaModule({
           throw new Error(data?.message ?? "Gagal menyimpan keluarga");
         }
 
-        setItems((prev) => [data.data, ...prev]);
+        // setItems((prev) => [data.data, ...prev]); // CANNOT DO THIS
+        onDataChange();
         setOpen(false);
         form.reset();
         toast.success("Keluarga berhasil ditambahkan");
@@ -268,7 +271,8 @@ export default function KeluargaModule({
       const res = await fetch(`/api/keluarga/${encodeURIComponent(deleteTarget)}`, { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.message ?? "Gagal menghapus keluarga");
-      setItems((prev) => prev.filter((it) => it.idKeluarga !== deleteTarget));
+      // setItems((prev) => prev.filter((it) => it.idKeluarga !== deleteTarget)); // CANNOT DO THIS
+      onDataChange();
       toast.success("Keluarga berhasil dihapus");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Terjadi kesalahan");
@@ -489,7 +493,7 @@ export default function KeluargaModule({
           <Input
             placeholder="Cari berdasarkan No KK atau Nama Kepala Keluarga..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9"
           />
         </div>
@@ -525,8 +529,14 @@ export default function KeluargaModule({
                   <TableCell className="text-right"><div className="ml-auto h-8 w-16 animate-pulse rounded bg-muted" /></TableCell>
                 </TableRow>
               ))
+            ) : items.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  Belum ada data keluarga.
+                </TableCell>
+              </TableRow>
             ) : (
-              filteredItems.map((item) => {
+              items.map((item) => {
                 // Find head name based on Status "Kepala Keluarga" (needs precise logic or master ID)
                 // Since we don't have head ID anymore, we filter jemaat list
                 const kepala = item.jemaat?.find((j) => j.status?.status.toLowerCase().includes("kepala"));
@@ -590,6 +600,16 @@ export default function KeluargaModule({
         </Table>
       </div>
 
+      <PaginationControls
+        page={metadata.page}
+        limit={metadata.limit}
+        totalCount={metadata.total}
+        totalPages={metadata.totalPages}
+        onPageChange={onPageChange}
+        onLimitChange={onLimitChange}
+        isLoading={isLoading}
+      />
+
       {/* Mobile Grid View for Keluarga */}
       <div className="grid grid-cols-1 gap-4 md:hidden">
         {isLoading ? (
@@ -605,8 +625,12 @@ export default function KeluargaModule({
               </div>
             </div>
           ))
+        ) : items.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground border rounded-lg bg-card">
+            Belum ada data keluarga.
+          </div>
         ) : (
-          filteredItems.map((item) => {
+          items.map((item) => {
             const kepala = item.jemaat?.find((j) => j.status?.status.toLowerCase().includes("kepala"));
             return (
               <div key={item.idKeluarga} className="rounded-lg border bg-card p-4 shadow-sm hover:bg-accent/50 transition-colors">

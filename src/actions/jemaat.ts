@@ -2,7 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 
-export async function getJemaatAction(filters?: Record<string, string>) {
+export async function getJemaatAction(
+    page: number = 1,
+    limit: number = 10,
+    filters?: Record<string, string>,
+    searchQuery?: string
+) {
     try {
         const where: any = {};
 
@@ -33,50 +38,73 @@ export async function getJemaatAction(filters?: Record<string, string>) {
             }
         }
 
-        const data = await prisma.jemaat.findMany({
-            where,
-            include: {
-                keluarga: {
-                    include: {
-                        alamat: {
-                            include: {
-                                kelurahan: {
-                                    include: {
-                                        kecamatan: {
-                                            include: {
-                                                kotaKab: {
-                                                    include: { provinsi: true },
+        if (searchQuery) {
+            where.OR = [
+                { nama: { contains: searchQuery, mode: "insensitive" } },
+                { idJemaat: { contains: searchQuery, mode: "insensitive" } }
+            ];
+        }
+
+        const skip = (page - 1) * limit;
+
+        const [data, total] = await Promise.all([
+            prisma.jemaat.findMany({
+                where,
+                include: {
+                    keluarga: {
+                        include: {
+                            alamat: {
+                                include: {
+                                    kelurahan: {
+                                        include: {
+                                            kecamatan: {
+                                                include: {
+                                                    kotaKab: {
+                                                        include: { provinsi: true },
+                                                    },
                                                 },
                                             },
                                         },
                                     },
                                 },
                             },
+                            rayon: true,
+                            statusKepemilikan: true,
+                            statusTanah: true,
                         },
-                        rayon: true,
-                        statusKepemilikan: true,
-                        statusTanah: true,
+                    },
+                    status: true,
+                    pendidikan: true,
+                    pekerjaan: true,
+                    pendapatan: true,
+                    jaminan: true,
+                    pernikahan: true,
+                    baptisOwned: true,
+                    sidiOwned: true,
+                    jabatanRel: {
+                        include: {
+                            jabatan: true,
+                        },
                     },
                 },
-                status: true,
-                pendidikan: true,
-                pekerjaan: true,
-                pendapatan: true,
-                jaminan: true,
-                pernikahan: true,
-                baptisOwned: true,
-                sidiOwned: true,
-                jabatanRel: {
-                    include: {
-                        jabatan: true,
-                    },
+                orderBy: {
+                    nama: "asc",
                 },
-            },
-            orderBy: {
-                nama: "asc",
-            },
-        });
-        return data;
+                take: limit,
+                skip: skip,
+            }),
+            prisma.jemaat.count({ where }),
+        ]);
+
+        return {
+            data,
+            metadata: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            }
+        };
     } catch (error) {
         console.error("Failed to fetch jemaat:", error);
         throw new Error("Failed to fetch jemaat data");

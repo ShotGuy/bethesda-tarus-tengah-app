@@ -200,6 +200,8 @@ model Jemaat {
   sidiOwned        Sidi?               @relation("SidiOwner")
   sidiRecord       Sidi?               @relation("JemaatSidiLink", fields: [idSidi], references: [idSidi])
   jabatanRel       JemaatJabatan[]
+
+  @@index([nama])
 }
 
 model Klasis {

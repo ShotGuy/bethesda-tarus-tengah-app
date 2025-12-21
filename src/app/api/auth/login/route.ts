@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { createResponse } from "@/lib/api-response";
 import { attachSessionCookie, createSession } from "@/lib/session.server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   username: z.string().min(3),
@@ -21,6 +22,18 @@ export const POST = async (request: Request) => {
         password: errors.password?.[0] ?? "",
       }),
       { status: 400 },
+    );
+  }
+
+  // Rate Limiting Security
+  // Get IP (naive approach for Node/Next)
+  const ip = request.headers.get("x-forwarded-for") ?? "unknown-ip";
+  const { success } = checkRateLimit(ip, { limit: 5, windowMs: 60 * 1000 }); // 5 attempts per minute
+
+  if (!success) {
+    return NextResponse.json(
+      createResponse(false, null, "Terlalu banyak percobaan login. Silakan tunggu 1 menit."),
+      { status: 429 },
     );
   }
 

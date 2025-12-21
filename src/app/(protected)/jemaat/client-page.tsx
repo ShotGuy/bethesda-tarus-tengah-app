@@ -14,23 +14,52 @@ export default function JemaatClientPage({
     initialData,
     masters,
 }: JemaatClientPageProps) {
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const [searchQuery, setSearchQuery] = useState("");
     const [filters, setFilters] = useState<Record<string, string>>({});
 
-    const { data: jemaat, isLoading } = useQuery({
-        queryKey: ["jemaat", filters],
-        queryFn: () => getJemaatAction(filters),
-        initialData: initialData,
-        staleTime: 1 * 60 * 1000, // 1 minute
+    const { data: response, isLoading, refetch } = useQuery({
+        queryKey: ["jemaat", page, limit, filters, searchQuery],
+        queryFn: () => getJemaatAction(page, limit, filters, searchQuery),
+        // initialData logic needs update since structure changed
+        placeholderData: (prev) => prev,
     });
+
+    const items = response?.data?.map((item: any) => ({
+        ...item,
+        tanggalLahir: item.tanggalLahir instanceof Date
+            ? item.tanggalLahir.toISOString()
+            : String(item.tanggalLahir),
+    })) ?? [];
+    const metadata = response?.metadata ?? { total: 0, page: 1, limit: 10, totalPages: 1 };
 
     return (
         <JemaatModule
-            initialData={jemaat}
+            data={items}
+            metadata={metadata}
             masters={masters}
             isLoading={isLoading}
             filters={filters}
-            onFilterChange={(key, value) => setFilters((prev) => ({ ...prev, [key]: value }))}
-            onResetFilters={() => setFilters({})}
+            onFilterChange={(key, value) => {
+                setFilters((prev) => ({ ...prev, [key]: value }));
+                setPage(1); // Reset to page 1 on filter change
+            }}
+            onResetFilters={() => {
+                setFilters({});
+                setPage(1);
+            }}
+            onPageChange={setPage}
+            onLimitChange={(l) => {
+                setLimit(l);
+                setPage(1);
+            }}
+            searchQuery={searchQuery}
+            onSearchChange={(q) => {
+                setSearchQuery(q);
+                setPage(1);
+            }}
+            onDataChange={() => refetch()}
         />
     );
 }
