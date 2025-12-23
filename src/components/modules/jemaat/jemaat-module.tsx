@@ -58,6 +58,9 @@ type Jemaat = {
   keluarga?: {
     noKK?: string | null;
     rayon?: { namaRayon: string };
+    alamat?: {
+      kelurahan?: { nama: string };
+    };
   };
 };
 
@@ -70,12 +73,12 @@ type MasterCollections = {
   statusKepemilikan: Array<{ idStatusKepemilikan: string; status: string }>;
   statusTanah: Array<{ idStatusTanah: string; status: string }>;
   rayon: Array<{ idRayon: string; namaRayon: string }>;
-  kelurahan: Array<{ idKelurahan: string; nama: string }>;
 };
 
 import { PaginationControls } from "@/components/ui/pagination-controls";
 import { ExportModal } from "./export-modal";
 import { getJemaatAction } from "@/actions/jemaat";
+import { AsyncKelurahanSelect } from "./async-kelurahan-select";
 
 type Props = {
   data: Jemaat[];
@@ -146,6 +149,7 @@ export default function JemaatModule({
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [initialKelurahanName, setInitialKelurahanName] = useState("");
   const [isExistingFamily, setIsExistingFamily] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -448,6 +452,9 @@ export default function JemaatModule({
       idJaminan: item.idJaminan?.trim() ?? undefined,
       noKK: item.keluarga?.noKK ?? undefined,
     });
+
+    // Set initial kelurahan name if available
+    setInitialKelurahanName(item.keluarga?.alamat?.kelurahan?.nama ?? "");
     setOpen(true);
   };
 
@@ -878,25 +885,15 @@ export default function JemaatModule({
                             control={form.control}
                             name="keluargaBaru.idKelurahan"
                             render={({ field }) => (
-                              <FormItem>
+                              <FormItem className="flex flex-col">
                                 <FormLabel>Kelurahan <span className="text-red-500">*</span></FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Pilih" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {masters.kelurahan.map((item) => (
-                                      <SelectItem
-                                        key={item.idKelurahan}
-                                        value={item.idKelurahan}
-                                      >
-                                        {item.nama}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <FormControl>
+                                  <AsyncKelurahanSelect
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    initialLabel={initialKelurahanName}
+                                  />
+                                </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}

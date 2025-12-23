@@ -50,7 +50,6 @@ import {
   getStatusKepemilikanRumah,
   getStatusTanah,
   getRayon,
-  getKelurahan,
 } from "@/lib/cached-data";
 
 export default async function JemaatPage() {
@@ -64,7 +63,6 @@ export default async function JemaatPage() {
     statusKepemilikan,
     statusTanah,
     rayon,
-    kelurahan,
   ] = await Promise.all([
     // prisma.jemaat.findMany removed to enable instant navigation (Render First)
     Promise.resolve([]), // Placeholder to keep array destructuring working
@@ -77,7 +75,7 @@ export default async function JemaatPage() {
     getStatusKepemilikanRumah(),
     getStatusTanah(),
     getRayon(),
-    getKelurahan(),
+    // getKelurahan() removed (Async)
   ]);
 
   const serializedJemaat = jemaat.map((j: any) => ({
@@ -97,7 +95,7 @@ export default async function JemaatPage() {
         statusKepemilikan,
         statusTanah,
         rayon,
-        kelurahan,
+        // kelurahan removed
       }}
     />
   );

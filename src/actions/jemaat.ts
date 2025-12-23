@@ -113,17 +113,7 @@ export async function getJemaatAction(
                         include: {
                             alamat: {
                                 include: {
-                                    kelurahan: {
-                                        include: {
-                                            kecamatan: {
-                                                include: {
-                                                    kotaKab: {
-                                                        include: { provinsi: true },
-                                                    },
-                                                },
-                                            },
-                                        },
-                                    },
+                                    kelurahan: true,
                                 },
                             },
                             rayon: true,
