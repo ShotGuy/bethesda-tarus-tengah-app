@@ -223,6 +223,7 @@ model Jemaat {
   @@index([idJaminan])
   @@index([statusDalamKel])
   @@index([golDarah])
+  @@index([tanggalLahir])
 }
 
 model Klasis {

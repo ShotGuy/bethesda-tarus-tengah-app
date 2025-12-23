@@ -1,55 +1,29 @@
 import SakramenClientPage from "../client-page";
 import { prisma } from "@/lib/prisma";
+import { getSakramenAction } from "@/actions/sakramen";
+import { getKlasis, getRayon } from "@/lib/cached-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function SakramenSidiPage() {
-  const [baptis, sidi, pernikahan, jemaat, klasis] = await Promise.all([
-    prisma.baptis.findMany({
-      orderBy: { tanggal: "desc" },
-      include: {
-        jemaat: { select: { idJemaat: true, nama: true } },
-        klasis: true,
+  const [data, jemaat, klasis, rayon] = await Promise.all([
+    getSakramenAction(),
+    prisma.jemaat.findMany({
+      orderBy: { nama: "asc" },
+      select: {
+        idJemaat: true,
+        nama: true,
+        jenisKelamin: true,
       },
     }),
-    prisma.sidi.findMany({
-      orderBy: { tanggal: "desc" },
-      include: { jemaat: { select: { idJemaat: true, nama: true } }, klasis: true },
-    }),
-    prisma.pernikahan.findMany({
-      orderBy: { tanggal: "desc" },
-      include: { jemaats: { select: { idJemaat: true, nama: true } } },
-    }),
-    prisma.jemaat.findMany({ orderBy: { nama: "asc" }, take: 1000 }).then((items) =>
-      items.map((item) => ({
-        idJemaat: item.idJemaat,
-        nama: item.nama,
-        jenisKelamin: item.jenisKelamin,
-      }))
-    ),
-    prisma.klasis.findMany({ orderBy: { nama: "asc" } }),
+    getKlasis(),
+    getRayon(),
   ]);
-  const serializeDate = (d: any) => (d instanceof Date ? d.toISOString() : String(d));
-
-  const serializedBaptis = baptis.map((b: any) => ({
-    ...b,
-    tanggal: serializeDate(b.tanggal),
-  }));
-
-  const serializedSidi = sidi.map((s: any) => ({
-    ...s,
-    tanggal: serializeDate(s.tanggal),
-  }));
-
-  const serializedPernikahan = pernikahan.map((p: any) => ({
-    ...p,
-    tanggal: serializeDate(p.tanggal),
-  }));
 
   return (
     <SakramenClientPage
-      initialData={{ baptis: serializedBaptis, sidi: serializedSidi, pernikahan: serializedPernikahan }}
-      masters={{ jemaat, klasis }}
+      initialData={data}
+      masters={{ jemaat, klasis, rayon }}
       initialTab="sidi"
     />
   );

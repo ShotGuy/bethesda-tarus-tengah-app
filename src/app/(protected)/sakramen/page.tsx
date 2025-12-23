@@ -1,46 +1,13 @@
 import SakramenClientPage from "./client-page";
 import { prisma } from "@/lib/prisma";
-import { getKlasis } from "@/lib/cached-data";
+import { getSakramenAction } from "@/actions/sakramen";
+import { getKlasis, getRayon } from "@/lib/cached-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function SakramenPage() {
-  const [baptis, sidi, pernikahan, jemaat, klasis] = await Promise.all([
-    prisma.baptis.findMany({
-      orderBy: { tanggal: "desc" },
-      include: {
-        jemaat: {
-          select: {
-            idJemaat: true,
-            nama: true,
-          },
-        },
-        klasis: true,
-      },
-    }),
-    prisma.sidi.findMany({
-      orderBy: { tanggal: "desc" },
-      include: {
-        jemaat: {
-          select: {
-            idJemaat: true,
-            nama: true,
-          },
-        },
-        klasis: true,
-      },
-    }),
-    prisma.pernikahan.findMany({
-      orderBy: { tanggal: "desc" },
-      include: {
-        jemaats: {
-          select: {
-            idJemaat: true,
-            nama: true,
-          },
-        },
-      },
-    }),
+  const [data, jemaat, klasis, rayon] = await Promise.all([
+    getSakramenAction(),
     prisma.jemaat.findMany({
       orderBy: { nama: "asc" },
       select: {
@@ -50,12 +17,13 @@ export default async function SakramenPage() {
       },
     }),
     getKlasis(),
+    getRayon(),
   ]);
 
   return (
     <SakramenClientPage
-      initialData={{ baptis, sidi, pernikahan }}
-      masters={{ jemaat, klasis }}
+      initialData={data}
+      masters={{ jemaat, klasis, rayon }}
     />
   );
 }
