@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -96,10 +96,26 @@ export function AsyncKelurahanSelect({
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="w-full justify-between"
+                    className="w-full justify-between font-normal"
                 >
-                    {selectedLabel || "Pilih Kelurahan..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <span className={cn(!value && "text-muted-foreground")}>
+                        {selectedLabel || "Pilih Kelurahan..."}
+                    </span>
+                    <div className="flex items-center gap-1 ml-2 shrink-0 opacity-50">
+                        {value && (
+                            <div
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onChange("");
+                                    setSelectedLabel("");
+                                }}
+                                className="hover:bg-muted p-0.5 rounded-sm cursor-pointer"
+                            >
+                                <X className="h-4 w-4" />
+                            </div>
+                        )}
+                        <ChevronsUpDown className="h-4 w-4" />
+                    </div>
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0">

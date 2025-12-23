@@ -53,6 +53,9 @@ model Baptis {
   jemaat     Jemaat @relation("BaptisOwner", fields: [idJemaat], references: [idJemaat])
   jemaatLink Jemaat? @relation("JemaatBaptisLink")
   klasis     Klasis @relation(fields: [idKlasis], references: [idKlasis])
+
+  @@index([idKlasis])
+  @@index([tanggal])
 }
 
 model Sidi {
@@ -64,6 +67,9 @@ model Sidi {
   jemaat     Jemaat @relation("SidiOwner", fields: [idJemaat], references: [idJemaat])
   jemaatLink Jemaat? @relation("JemaatSidiLink")
   klasis     Klasis @relation(fields: [idKlasis], references: [idKlasis])
+
+  @@index([idKlasis])
+  @@index([tanggal])
 }
 
 model Pernikahan {
@@ -156,6 +162,8 @@ model Alamat {
 
   kelurahan Kelurahan @relation(fields: [idKelurahan], references: [idKelurahan])
   keluarga  Keluarga[]
+
+  @@index([idKelurahan])
 }
 
 model Keluarga {
@@ -174,6 +182,8 @@ model Keluarga {
   jemaat            Jemaat[]
 
   @@index([idRayon])
+  @@index([idStatusKepemilikan])
+  @@index([idStatusTanah])
 }
 
 model Jemaat {
@@ -207,6 +217,12 @@ model Jemaat {
 
   @@index([nama])
   @@index([idKeluarga])
+  @@index([idPendidikan])
+  @@index([idPekerjaan])
+  @@index([idPendapatan])
+  @@index([idJaminan])
+  @@index([statusDalamKel])
+  @@index([golDarah])
 }
 
 model Klasis {

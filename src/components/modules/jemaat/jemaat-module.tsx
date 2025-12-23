@@ -79,6 +79,7 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { ExportModal } from "./export-modal";
 import { getJemaatAction } from "@/actions/jemaat";
 import { AsyncKelurahanSelect } from "./async-kelurahan-select";
+import { Combobox } from "@/components/ui/combobox";
 
 type Props = {
   data: Jemaat[];
@@ -570,17 +571,15 @@ export default function JemaatModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Jenis Kelamin <span className="text-red-500">*</span></FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="L">Laki-laki</SelectItem>
-                            <SelectItem value="P">Perempuan</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          value={field.value}
+                          onChange={field.onChange}
+                          options={[
+                            { label: "Laki-laki", value: "L" },
+                            { label: "Perempuan", value: "P" },
+                          ]}
+                          placeholder="Pilih Jenis Kelamin"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -604,23 +603,15 @@ export default function JemaatModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status Dalam Keluarga <span className="text-red-500">*</span></FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {masters.status.map((item) => (
-                              <SelectItem
-                                key={item.idStatusDalamKel}
-                                value={item.idStatusDalamKel}
-                              >
-                                {item.status}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          value={field.value}
+                          onChange={field.onChange}
+                          options={masters.status.map((item) => ({
+                            label: item.status,
+                            value: item.idStatusDalamKel,
+                          }))}
+                          placeholder="Pilih Status"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -631,20 +622,15 @@ export default function JemaatModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Golongan Darah</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih Golongan Darah" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {["A", "B", "AB", "O"].map((darah) => (
-                              <SelectItem key={darah} value={darah}>
-                                {darah}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          value={field.value || undefined}
+                          onChange={field.onChange}
+                          options={["A", "B", "AB", "O"].map((d) => ({
+                            label: d,
+                            value: d,
+                          }))}
+                          placeholder="Pilih Golongan Darah"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -655,20 +641,15 @@ export default function JemaatModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Pendidikan</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {masters.pendidikan.map((item) => (
-                              <SelectItem key={item.idPendidikan} value={item.idPendidikan}>
-                                {item.jenjang}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          value={field.value || undefined}
+                          onChange={field.onChange}
+                          options={masters.pendidikan.map((item) => ({
+                            label: item.jenjang,
+                            value: item.idPendidikan,
+                          }))}
+                          placeholder="Pilih Pendidikan"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -679,20 +660,15 @@ export default function JemaatModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Pekerjaan</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {masters.pekerjaan.map((item) => (
-                              <SelectItem key={item.idPekerjaan} value={item.idPekerjaan}>
-                                {item.namaPekerjaan}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          value={field.value || undefined}
+                          onChange={field.onChange}
+                          options={masters.pekerjaan.map((item) => ({
+                            label: item.namaPekerjaan,
+                            value: item.idPekerjaan,
+                          }))}
+                          placeholder="Pilih Pekerjaan"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -703,20 +679,15 @@ export default function JemaatModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Pendapatan</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {masters.pendapatan.map((item) => (
-                              <SelectItem key={item.idPendapatan} value={item.idPendapatan}>
-                                {item.rentang}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          value={field.value || undefined}
+                          onChange={field.onChange}
+                          options={masters.pendapatan.map((item) => ({
+                            label: item.rentang,
+                            value: item.idPendapatan,
+                          }))}
+                          placeholder="Pilih Pendapatan"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -727,20 +698,15 @@ export default function JemaatModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Jaminan Kesehatan</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {masters.jaminan.map((item) => (
-                              <SelectItem key={item.idJaminan} value={item.idJaminan}>
-                                {item.jenisJaminan}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          value={field.value || undefined}
+                          onChange={field.onChange}
+                          options={masters.jaminan.map((item) => ({
+                            label: item.jenisJaminan,
+                            value: item.idJaminan,
+                          }))}
+                          placeholder="Pilih Jaminan"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -809,23 +775,15 @@ export default function JemaatModule({
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Status Kepemilikan Rumah <span className="text-red-500">*</span></FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Pilih" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {masters.statusKepemilikan.map((item) => (
-                                      <SelectItem
-                                        key={item.idStatusKepemilikan}
-                                        value={item.idStatusKepemilikan}
-                                      >
-                                        {item.status}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <Combobox
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  options={masters.statusKepemilikan.map((item) => ({
+                                    label: item.status,
+                                    value: item.idStatusKepemilikan,
+                                  }))}
+                                  placeholder="Pilih Status Kepemilikan"
+                                />
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -836,23 +794,15 @@ export default function JemaatModule({
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Status Tanah <span className="text-red-500">*</span></FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Pilih" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {masters.statusTanah.map((item) => (
-                                      <SelectItem
-                                        key={item.idStatusTanah}
-                                        value={item.idStatusTanah}
-                                      >
-                                        {item.status}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <Combobox
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  options={masters.statusTanah.map((item) => ({
+                                    label: item.status,
+                                    value: item.idStatusTanah,
+                                  }))}
+                                  placeholder="Pilih Status Tanah"
+                                />
                                 <FormMessage />
                               </FormItem>
                             )}
@@ -863,20 +813,15 @@ export default function JemaatModule({
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Rayon <span className="text-red-500">*</span></FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger className="w-full">
-                                      <SelectValue placeholder="Pilih" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {masters.rayon.map((item) => (
-                                      <SelectItem key={item.idRayon} value={item.idRayon}>
-                                        {item.namaRayon}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <Combobox
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  options={masters.rayon.map((item) => ({
+                                    label: item.namaRayon,
+                                    value: item.idRayon,
+                                  }))}
+                                  placeholder="Pilih Rayon"
+                                />
                                 <FormMessage />
                               </FormItem>
                             )}

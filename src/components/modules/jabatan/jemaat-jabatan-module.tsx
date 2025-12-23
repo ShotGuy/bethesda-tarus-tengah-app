@@ -45,6 +45,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { DataFilter, FilterConfig } from "@/components/ui/data-filter";
+import { Combobox } from "@/components/ui/combobox";
 
 type Assignment = {
   idJemaat: string;
@@ -267,20 +268,17 @@ export default function JemaatJabatanModule({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Jemaat <span className="text-red-500">*</span></FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger disabled={!!editingItem}>
-                            <SelectValue placeholder="Pilih jemaat" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="max-h-60">
-                          {masters.jemaat.map((item) => (
-                            <SelectItem key={item.idJemaat} value={item.idJemaat}>
-                              {item.nama}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Combobox
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={masters.jemaat.map((item) => ({
+                          label: item.nama,
+                          value: item.idJemaat,
+                        }))}
+                        placeholder="Pilih Jemaat"
+                        disabled={!!editingItem}
+                        modal
+                      />
                       <FormMessage />
                     </FormItem>
                   )}
@@ -291,20 +289,17 @@ export default function JemaatJabatanModule({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Jabatan <span className="text-red-500">*</span></FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger disabled={!!editingItem}>
-                            <SelectValue placeholder="Pilih jabatan" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {masters.jabatan.map((item) => (
-                            <SelectItem key={item.idJabatan} value={item.idJabatan}>
-                              {item.namaJabatan}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Combobox
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={masters.jabatan.map((item) => ({
+                          label: item.namaJabatan,
+                          value: item.idJabatan,
+                        }))}
+                        placeholder="Pilih Jabatan"
+                        disabled={!!editingItem}
+                        modal
+                      />
                       <FormMessage />
                     </FormItem>
                   )}

@@ -69,6 +69,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { DataFilter, FilterConfig } from "@/components/ui/data-filter";
+import { Combobox } from "@/components/ui/combobox";
 
 type BaptisRecord = {
   idBaptis: string;
@@ -151,8 +152,6 @@ export default function SakramenModule({
   const [openSidi, setOpenSidi] = useState(false);
   const [openPernikahan, setOpenPernikahan] = useState(false);
 
-  const [openCombobox1, setOpenCombobox1] = useState(false);
-  const [openCombobox2, setOpenCombobox2] = useState(false);
 
   const [editingBaptisId, setEditingBaptisId] = useState<string | null>(null);
   const [editingSidiId, setEditingSidiId] = useState<string | null>(null);
@@ -487,20 +486,16 @@ export default function SakramenModule({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Jemaat <span className="text-red-500">*</span></FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Pilih jemaat" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="max-h-60">
-                              {masters.jemaat.map((item) => (
-                                <SelectItem key={item.idJemaat} value={item.idJemaat}>
-                                  {item.nama}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Combobox
+                            value={field.value}
+                            onChange={field.onChange}
+                            options={masters.jemaat.map((item) => ({
+                              label: `${item.nama} (${item.jenisKelamin ? "L" : "P"})`,
+                              value: item.idJemaat,
+                            }))}
+                            placeholder="Pilih Jemaat"
+                            modal
+                          />
                           <FormMessage />
                         </FormItem>
                       )}
@@ -511,20 +506,16 @@ export default function SakramenModule({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Klasis <span className="text-red-500">*</span></FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Pilih" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {masters.klasis.map((item) => (
-                                <SelectItem key={item.idKlasis} value={item.idKlasis}>
-                                  {item.nama}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Combobox
+                            value={field.value}
+                            onChange={field.onChange}
+                            options={masters.klasis.map((item) => ({
+                              label: item.nama,
+                              value: item.idKlasis,
+                            }))}
+                            placeholder="Pilih Klasis"
+                            modal
+                          />
                           <FormMessage />
                         </FormItem>
                       )}
@@ -600,20 +591,16 @@ export default function SakramenModule({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Jemaat <span className="text-red-500">*</span></FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Pilih jemaat" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent className="max-h-60">
-                              {masters.jemaat.map((item) => (
-                                <SelectItem key={item.idJemaat} value={item.idJemaat}>
-                                  {item.nama}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Combobox
+                            value={field.value}
+                            onChange={field.onChange}
+                            options={masters.jemaat.map((item) => ({
+                              label: `${item.nama} (${item.jenisKelamin ? "L" : "P"})`,
+                              value: item.idJemaat,
+                            }))}
+                            placeholder="Pilih Jemaat"
+                            modal
+                          />
                           <FormMessage />
                         </FormItem>
                       )}
@@ -624,20 +611,16 @@ export default function SakramenModule({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Klasis <span className="text-red-500">*</span></FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Pilih" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {masters.klasis.map((item) => (
-                                <SelectItem key={item.idKlasis} value={item.idKlasis}>
-                                  {item.nama}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Combobox
+                            value={field.value}
+                            onChange={field.onChange}
+                            options={masters.klasis.map((item) => ({
+                              label: item.nama,
+                              value: item.idKlasis,
+                            }))}
+                            placeholder="Pilih Klasis"
+                            modal
+                          />
                           <FormMessage />
                         </FormItem>
                       )}
@@ -713,20 +696,16 @@ export default function SakramenModule({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Klasis <span className="text-red-500">*</span></FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Pilih klasis" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {masters.klasis.map((item) => (
-                                <SelectItem key={item.idKlasis} value={item.nama}>
-                                  {item.nama}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Combobox
+                            value={field.value}
+                            onChange={field.onChange}
+                            options={masters.klasis.map((item) => ({
+                              label: item.nama,
+                              value: item.nama, // Note: Schema uses 'klasis' (string name?), earlier Select used item.nama as value
+                            }))}
+                            placeholder="Pilih Klasis"
+                            modal
+                          />
                           <FormMessage />
                         </FormItem>
                       )}
@@ -752,62 +731,20 @@ export default function SakramenModule({
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
                           <FormLabel>Pasangan 1 <span className="text-red-500">*</span></FormLabel>
-                          <Popover open={openCombobox1} onOpenChange={setOpenCombobox1}>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className={cn(
-                                    "w-full justify-between",
-                                    !field.value?.[0] && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value?.[0]
-                                    ? masters.jemaat.find(
-                                      (j) => j.idJemaat === field.value[0]
-                                    )?.nama
-                                    : "Pilih jemaat"}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[400px] p-0">
-                              <Command>
-                                <CommandInput placeholder="Cari jemaat..." />
-                                <CommandList>
-                                  <CommandEmpty>Jemaat tidak ditemukan.</CommandEmpty>
-                                  <CommandGroup>
-                                    {masters.jemaat.map((jemaat) => (
-                                      <CommandItem
-                                        value={jemaat.nama}
-                                        key={jemaat.idJemaat}
-                                        onSelect={() => {
-                                          const newValue = [...(field.value || [])];
-                                          newValue[0] = jemaat.idJemaat;
-                                          field.onChange(newValue);
-                                          setOpenCombobox1(false);
-                                        }}
-                                      >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            jemaat.idJemaat === field.value?.[0]
-                                              ? "opacity-100"
-                                              : "opacity-0"
-                                          )}
-                                        />
-                                        {jemaat.nama}
-                                        <span className="ml-2 text-xs text-muted-foreground">
-                                          ({jemaat.jenisKelamin ? "L" : "P"})
-                                        </span>
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
+                          <Combobox
+                            value={field.value?.[0]}
+                            onChange={(val) => {
+                              const newValue = [...(field.value || [])];
+                              newValue[0] = val || "";
+                              field.onChange(newValue);
+                            }}
+                            options={masters.jemaat.map((item) => ({
+                              label: `${item.nama} (${item.jenisKelamin ? "L" : "P"})`,
+                              value: item.idJemaat,
+                            }))}
+                            placeholder="Pilih Jemaat (Pasangan 1)"
+                            modal
+                          />
                           <FormMessage />
                         </FormItem>
                       )}
@@ -820,62 +757,20 @@ export default function SakramenModule({
                       render={({ field }) => (
                         <FormItem className="flex flex-col">
                           <FormLabel>Pasangan 2 <span className="text-red-500">*</span></FormLabel>
-                          <Popover open={openCombobox2} onOpenChange={setOpenCombobox2}>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  role="combobox"
-                                  className={cn(
-                                    "w-full justify-between",
-                                    !field.value?.[1] && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value?.[1]
-                                    ? masters.jemaat.find(
-                                      (j) => j.idJemaat === field.value[1]
-                                    )?.nama
-                                    : "Pilih jemaat"}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[400px] p-0">
-                              <Command>
-                                <CommandInput placeholder="Cari jemaat..." />
-                                <CommandList>
-                                  <CommandEmpty>Jemaat tidak ditemukan.</CommandEmpty>
-                                  <CommandGroup>
-                                    {masters.jemaat.map((jemaat) => (
-                                      <CommandItem
-                                        value={jemaat.nama}
-                                        key={jemaat.idJemaat}
-                                        onSelect={() => {
-                                          const newValue = [...(field.value || [])];
-                                          newValue[1] = jemaat.idJemaat;
-                                          field.onChange(newValue);
-                                          setOpenCombobox2(false);
-                                        }}
-                                      >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            jemaat.idJemaat === field.value?.[1]
-                                              ? "opacity-100"
-                                              : "opacity-0"
-                                          )}
-                                        />
-                                        {jemaat.nama}
-                                        <span className="ml-2 text-xs text-muted-foreground">
-                                          ({jemaat.jenisKelamin ? "L" : "P"})
-                                        </span>
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
+                          <Combobox
+                            value={field.value?.[1]}
+                            onChange={(val) => {
+                              const newValue = [...(field.value || [])];
+                              newValue[1] = val || "";
+                              field.onChange(newValue);
+                            }}
+                            options={masters.jemaat.map((item) => ({
+                              label: `${item.nama} (${item.jenisKelamin ? "L" : "P"})`,
+                              value: item.idJemaat,
+                            }))}
+                            placeholder="Pilih Jemaat (Pasangan 2)"
+                            modal
+                          />
                           <FormMessage />
                         </FormItem>
                       )}

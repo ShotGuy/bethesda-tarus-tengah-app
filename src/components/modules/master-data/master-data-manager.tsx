@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Combobox } from "@/components/ui/combobox";
 
 import type { MasterDataset, MasterField } from "@/constants/master-datasets";
 
@@ -111,6 +112,17 @@ export const MasterDataManager = ({ config, initialItems, isLoading }: Props) =>
   useEffect(() => {
     setItems(initialItems ?? []);
   }, [initialItems]);
+
+  // Fetch dropdown options automatically when form is opened
+  useEffect(() => {
+    if (createOpen || editingItem) {
+      config.fields.forEach((field) => {
+        if (field.type === "dropdown" && !dropdownOptions[field.name]) {
+          fetchDropdownOptions(field);
+        }
+      });
+    }
+  }, [createOpen, editingItem, config.fields, dropdownOptions]);
 
   /**
    * Fetch dropdown options for a field
@@ -264,44 +276,22 @@ export const MasterDataManager = ({ config, initialItems, isLoading }: Props) =>
         name={field.name}
         render={({ field: formField }) => {
           if (field.type === "dropdown") {
+            const options = (dropdownOptions[field.name] || []).map((opt) => ({
+              label: opt.name,
+              value: String(opt.id),
+            }));
+
             return (
               <FormItem>
                 <FormLabel>{field.label} <span className="text-red-500">*</span></FormLabel>
-                <Select
+                <Combobox
                   value={formField.value}
-                  onValueChange={(value) => {
-                    formField.onChange(value);
-                  }}
-                  onOpenChange={(open) => {
-                    if (open && !dropdownOptions[field.name]) {
-                      fetchDropdownOptions(field);
-                    }
-                  }}
-                  disabled={disabled}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Pilih ${field.label.toLowerCase()}`} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {loadingDropdowns[field.name] ? (
-                      <SelectItem value="__loading" disabled>
-                        Memuat...
-                      </SelectItem>
-                    ) : (dropdownOptions[field.name] || []).length > 0 ? (
-                      (dropdownOptions[field.name] || []).map((option) => (
-                        <SelectItem key={option.id} value={option.id}>
-                          {option.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="__no_options" disabled>
-                        Tidak ada pilihan
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                  onChange={formField.onChange}
+                  options={options}
+                  placeholder={loadingDropdowns[field.name] ? "Memuat..." : `Pilih ${field.label.toLowerCase()}`}
+                  disabled={disabled || loadingDropdowns[field.name]}
+                  modal
+                />
                 <FormMessage />
               </FormItem>
             );

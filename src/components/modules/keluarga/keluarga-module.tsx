@@ -41,6 +41,8 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DataFilter, FilterConfig } from "@/components/ui/data-filter";
+import { Combobox } from "@/components/ui/combobox";
+import { AsyncKelurahanSelect } from "@/components/modules/jemaat/async-kelurahan-select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -137,9 +139,10 @@ export default function KeluargaModule({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [initialKelurahanName, setInitialKelurahanName] = useState("");
   const router = useRouter();
 
-  const filterConfig: FilterConfig[] = useMemo(() => [
+  const filterConfig: FilterConfig[] = useMemo<FilterConfig[]>(() => [
     {
       key: "idRayon",
       label: "Rayon",
@@ -261,6 +264,11 @@ export default function KeluargaModule({
 
   const handleEdit = (item: Keluarga) => {
     setEditingId(item.idKeluarga);
+
+    // Find Kelurahan name for AsyncSelect initial label
+    const kelName = masters.kelurahan.find(k => k.idKelurahan === item.alamat.idKelurahan)?.nama || "";
+    setInitialKelurahanName(kelName);
+
     form.reset({
       noKK: item.noKK ?? "",
       idStatusKepemilikan: item.idStatusKepemilikan,
@@ -339,20 +347,15 @@ export default function KeluargaModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Rayon <span className="text-red-500">*</span></FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {masters.rayon.map((item) => (
-                              <SelectItem key={item.idRayon} value={item.idRayon}>
-                                {item.namaRayon}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          value={field.value}
+                          onChange={field.onChange}
+                          options={masters.rayon.map((item) => ({
+                            label: item.namaRayon,
+                            value: item.idRayon,
+                          }))}
+                          placeholder="Pilih Rayon"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -363,23 +366,15 @@ export default function KeluargaModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status Kepemilikan <span className="text-red-500">*</span></FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {masters.statusKepemilikan.map((item) => (
-                              <SelectItem
-                                key={item.idStatusKepemilikan}
-                                value={item.idStatusKepemilikan}
-                              >
-                                {item.status}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          value={field.value}
+                          onChange={field.onChange}
+                          options={masters.statusKepemilikan.map((item) => ({
+                            label: item.status,
+                            value: item.idStatusKepemilikan,
+                          }))}
+                          placeholder="Pilih Status"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -390,23 +385,15 @@ export default function KeluargaModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status Tanah <span className="text-red-500">*</span></FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-60">
-                            {masters.statusTanah.map((item) => (
-                              <SelectItem
-                                key={item.idStatusTanah}
-                                value={item.idStatusTanah}
-                              >
-                                {item.status}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Combobox
+                          value={field.value}
+                          onChange={field.onChange}
+                          options={masters.statusTanah.map((item) => ({
+                            label: item.status,
+                            value: item.idStatusTanah,
+                          }))}
+                          placeholder="Pilih Status Tanah"
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
@@ -447,20 +434,11 @@ export default function KeluargaModule({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Kelurahan <span className="text-red-500">*</span></FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Pilih" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent className="max-h-60">
-                            {masters.kelurahan.map((item) => (
-                              <SelectItem key={item.idKelurahan} value={item.idKelurahan}>
-                                {item.nama}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <AsyncKelurahanSelect
+                          value={field.value}
+                          onChange={field.onChange}
+                          initialLabel={initialKelurahanName}
+                        />
                         <FormMessage />
                       </FormItem>
                     )}
