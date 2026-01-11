@@ -41,6 +41,25 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Tremor Theme Registration */
+  --color-tremor-brand-faint: var(--tremor-brand-faint);
+  --color-tremor-brand-muted: var(--tremor-brand-muted);
+  --color-tremor-brand-subtle: var(--tremor-brand-subtle);
+  --color-tremor-brand: var(--tremor-brand);
+  --color-tremor-brand-emphasis: var(--tremor-brand-emphasis);
+  --color-tremor-brand-inverted: var(--tremor-brand-inverted);
+  --color-tremor-background-muted: var(--tremor-background-muted);
+  --color-tremor-background-subtle: var(--tremor-background-subtle);
+  --color-tremor-background: var(--tremor-background);
+  --color-tremor-background-emphasis: var(--tremor-background-emphasis);
+  --color-tremor-border: var(--tremor-border);
+  --color-tremor-ring: var(--tremor-ring);
+  --color-tremor-content-subtle: var(--tremor-content-subtle);
+  --color-tremor-content: var(--tremor-content);
+  --color-tremor-content-emphasis: var(--tremor-content-emphasis);
+  --color-tremor-content-strong: var(--tremor-content-strong);
+  --color-tremor-content-inverted: var(--tremor-content-inverted);
 }
 
 :root {
@@ -110,12 +129,56 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Tremor Dark Mode */
+  --tremor-brand-faint: #0B1229;
+  --tremor-brand-muted: #172554;
+  --tremor-brand-subtle: #1e40af;
+  --tremor-brand: #3b82f6;
+  --tremor-brand-emphasis: #60a5fa;
+  --tremor-brand-inverted: #030712;
+  --tremor-background-muted: #131A2B;
+  --tremor-background-subtle: #1f2937;
+  --tremor-background: #111827;
+  --tremor-background-emphasis: #374151;
+  --tremor-border: #374151;
+  --tremor-ring: #1f2937;
+  --tremor-content-subtle: #4b5563;
+  --tremor-content: #6b7280;
+  --tremor-content-emphasis: #e5e7eb;
+  --tremor-content-strong: #f9fafb;
+  --tremor-content-inverted: #000000;
+}
+
+:root {
+  /* ... existing vars ... */
+  /* Tremor Light Mode */
+  --tremor-brand-faint: #eff6ff;
+  --tremor-brand-muted: #bfdbfe;
+  --tremor-brand-subtle: #60a5fa;
+  --tremor-brand: #3b82f6;
+  --tremor-brand-emphasis: #1d4ed8;
+  --tremor-brand-inverted: #ffffff;
+  --tremor-background-muted: #f9fafb;
+  --tremor-background-subtle: #f3f4f6;
+  --tremor-background: #ffffff;
+  --tremor-background-emphasis: #374151;
+  --tremor-border: #e5e7eb;
+  --tremor-ring: #e5e7eb;
+  --tremor-content-subtle: #9ca3af;
+  --tremor-content: #6b7280;
+  --tremor-content-emphasis: #374151;
+  --tremor-content-strong: #111827;
+  --tremor-content-inverted: #ffffff;
+
+
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

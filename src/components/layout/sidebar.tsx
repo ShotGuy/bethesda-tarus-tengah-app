@@ -21,6 +21,7 @@ import {
   Award,
   Droplet,
   Star,
+  PieChart,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -31,8 +32,8 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/jemaat", label: "Jemaat", icon: Users },
   { href: "/keluarga", label: "Keluarga", icon: Home },
-  // Sakramen will be a dropdown below, keep placeholder
-  { href: "/jabatan", label: "Jabatan", icon: Briefcase },
+  { href: "/laporan", label: "Laporan", icon: PieChart },
+  { href: "/jabatan", label: "Jabatan", icon: Briefcase }, // Place Jabatan below Laporan or above? Laporan is high level. Let's put it after Keluarga.
 ];
 
 const SAKRAMEN_ITEMS = [

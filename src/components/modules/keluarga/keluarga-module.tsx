@@ -148,21 +148,6 @@ export default function KeluargaModule({
       label: "Rayon",
       options: masters.rayon.map((r) => ({ label: r.namaRayon, value: r.idRayon })),
     },
-    {
-      key: "idStatusKepemilikan",
-      label: "Status Rumah",
-      options: masters.statusKepemilikan.map((s) => ({ label: s.status, value: s.idStatusKepemilikan })),
-    },
-    {
-      key: "idStatusTanah",
-      label: "Status Tanah",
-      options: masters.statusTanah.map((s) => ({ label: s.status, value: s.idStatusTanah })),
-    },
-    {
-      key: "idKelurahan",
-      label: "Kelurahan",
-      options: masters.kelurahan.map((k) => ({ label: k.nama, value: k.idKelurahan })),
-    },
   ], [masters]);
 
   // Handle file preview removal later if needed
