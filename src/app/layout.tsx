@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { AppToaster } from "@/components/ui/toaster";
 import QueryProvider from "@/components/providers/query-provider";
+import { PwaInit } from "@/components/pwa-init";
 
 import "./globals.css";
 
@@ -43,6 +44,7 @@ export default function RootLayout({
         <QueryProvider>
           {children}
           <AppToaster />
+          <PwaInit />
         </QueryProvider>
       </body>
     </html>
